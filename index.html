@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>منصة الفرص | تنمويين مصر</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="tanmoyeen_icon_1024.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#11243a;--mut:#64758a;--pri:#1a3a6e;--acc:#0f8a5f;--bg:#f4f7fb;--card:#fff;--line:#e2e9f1;--red:#b33a3a;--amb:#a86300}
+*{box-sizing:border-box}body{margin:0;font-family:Cairo,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.wrap{max-width:440px;margin:0 auto;padding:28px 16px 60px}.wide{max-width:900px}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px}.brand img{width:44px;height:44px;border-radius:12px}
+.brand b{font-size:18px;color:var(--pri)}.brand small{display:block;color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 24px rgba(17,36,58,.06)}
+h1{font-size:20px;margin:0 0 6px}p{margin:0 0 14px;color:var(--mut);font-size:14px;line-height:1.7}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:inherit;font-size:15px;background:#fff}input:focus{outline:2px solid #bcd3f2;border-color:var(--pri)}
+.btn{display:block;width:100%;margin-top:16px;padding:12px;border:0;border-radius:12px;background:var(--pri);color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer}
+.btn:disabled{opacity:.6}.btn.ghost{background:#eef3ff;color:var(--pri);white-space:nowrap}.link{background:none;border:0;color:var(--pri);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-top:12px;font-size:13px}
+.msg{margin-top:12px;font-size:13.5px;border-radius:10px;padding:10px;display:none;line-height:1.7}.msg.err{display:block;background:#fbe6e6;color:var(--red)}.msg.ok{display:block;background:#e0f4ec;color:var(--acc)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.pill{display:inline-block;border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
+.mod{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.mod b{display:block;margin-bottom:4px}.mod span{font-size:13px;color:var(--mut)}
+.soon{float:left;font-size:11px;background:#fdf0d7;color:var(--amb);border-radius:999px;padding:1px 8px;font-weight:700}
+.state{text-align:center}.state .ic{font-size:42px;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{width:auto;flex:1;margin-top:10px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="v-load" class="wrap state" style="padding-top:120px;color:var(--mut)">⏳ جاري التحميل…</div>
+
+<!-- تسجيل الدخول -->
+<div id="v-login" class="wrap hide">
+  <div class="brand"><img src="tanmoyeen_icon_1024.png" alt=""><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
+  <div class="card">
+    <h1>دخول الجمعية</h1>
+    <p>ادخل بالإيميل اللي سجلت بيه الجمعية. أول مرة؟ هتلاقي في إيميلك رسالة فيها رابط تحط منه كلمة المرور.</p>
+    <form id="f-login" autocomplete="on">
+      <label for="email">الإيميل</label><input id="email" type="email" dir="ltr" autocomplete="username" required>
+      <label for="pass">كلمة المرور</label><input id="pass" type="password" dir="ltr" autocomplete="current-password" required>
+      <button class="btn" id="b-login" type="submit">دخول</button>
+    </form>
+    <button class="link" id="b-forgot" type="button">نسيت كلمة المرور؟</button>
+    <div class="msg" id="m-login"></div>
+  </div>
+  <p style="text-align:center;margin-top:16px;font-size:13px">لسه الجمعية مش مشتركة؟ <a href="https://elzieni2007-crypto.github.io/tanmoyeen-masr/?form=funding" style="color:var(--pri);font-weight:700">سجّل اهتمامك من هنا</a></p>
+</div>
+
+<!-- حالة الحساب (مش متاح) -->
+<div id="v-state" class="wrap hide">
+  <div class="brand"><img src="tanmoyeen_icon_1024.png" alt=""><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
+  <div class="card state"><div class="ic" id="s-ic"></div><h1 id="s-t"></h1><p id="s-p"></p>
+    <div class="row"><button class="btn" id="s-req" style="background:#1f9d55">ابعت طلب للإدارة</button><button class="btn ghost" data-out>تسجيل خروج</button></div><div class="msg" id="m-state"></div></div>
+</div>
+
+<!-- لوحة الجمعية -->
+<div id="v-dash" class="wrap wide hide">
+  <div class="top">
+    <div class="brand" style="margin:0;justify-content:flex-start"><img src="tanmoyeen_icon_1024.png" alt=""><div><b id="d-name"></b><small><span id="d-me"></span> · منصة الفرص</small></div></div>
+    <div class="row" style="gap:6px"><button class="btn ghost" id="b-chmail" style="margin:0;padding:8px 12px;font-size:13px">تغيير الإيميل</button><button class="btn ghost" id="b-chpass" style="margin:0;padding:8px 12px;font-size:13px">تغيير كلمة المرور</button><button class="btn ghost" data-out style="margin:0;padding:8px 12px;font-size:13px">خروج</button></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><span class="pill" id="d-pill"></span><div style="margin-top:6px;font-size:14px">الاشتراك ساري حتى <b id="d-until"></b></div></div>
+      <div style="font-size:13px;color:var(--mut)" id="d-left"></div>
+    </div>
+    <form id="f-mail" class="hide" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:6px">
+      <label for="nmail" id="l-nmail">إيميلك الجديد</label><input id="nmail" type="email" dir="ltr" required>
+      <label for="cpass">كلمة المرور الحالية (للتأكيد)</label><input id="cpass" type="password" dir="ltr" autocomplete="current-password" required>
+      <div class="row"><button class="btn" type="submit" id="b-mail">ابعت رابط التأكيد للإيميل الجديد</button><button class="btn ghost" type="button" id="b-mailx">إلغاء</button></div>
+    </form>
+    <div class="msg" id="m-dash"></div>
+  </div>
+  <a class="card go-app" id="b-app" href="app.html" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-decoration:none;color:inherit;border:1.5px solid var(--pri)">
+    <div><b style="font-size:17px;color:var(--pri)">🚀 ادخل منصة الفرص</b><div style="font-size:13.5px;color:var(--mut);margin-top:4px">الفرص المناسبة لجمعيتكم، تحليلها، دليل الممولين، وكتابة المقترح والموازنة</div></div>
+    <span style="font-size:22px;color:var(--pri)">←</span>
+  </a>
+  <div class="card" id="team" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b style="font-size:16px">👥 فريق الجمعية</b><span class="pill" id="t-seats" style="background:#eef3ff;color:var(--pri)"></span></div>
+    <div id="t-list" style="margin-top:8px"></div>
+    <form id="f-add" class="hide" style="margin-top:10px;border-top:1px dashed var(--line);padding-top:4px">
+      <div class="row" style="gap:8px"><div style="flex:1;min-width:160px"><label for="a-name">الاسم</label><input id="a-name" required></div>
+        <div style="flex:1;min-width:200px"><label for="a-email">الإيميل</label><input id="a-email" type="email" dir="ltr" required></div>
+        <div style="min-width:140px"><label for="a-role">الدور</label><select id="a-role" style="width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:inherit;background:#fff"><option value="editor">مُعِد</option><option value="reviewer">مراجع</option></select></div></div>
+      <div class="row"><button class="btn" type="submit" id="b-add">إضافة وإرسال رابط كلمة المرور</button><button class="btn ghost" type="button" id="b-addx">إلغاء</button></div>
+    </form>
+    <button class="btn ghost hide" id="b-addopen" style="margin-top:10px">➕ إضافة زميل</button>
+    <p style="margin:10px 0 0;font-size:12.5px" id="t-help"></p>
+    <div class="msg" id="m-team"></div>
+  </div>
+  <div class="grid">
+    <div class="mod"><span class="soon">قريبًا</span><b>🔎 الفرص المناسبة لجمعيتك</b><span>فرص التمويل المفتوحة مع نسبة التوافق مع الملف التعريفي</span></div>
+    <div class="mod"><span class="soon">قريبًا</span><b>🏢 الملف التعريفي للجمعية</b><span>بيانات الجمعية اللي بتتحسب منها نسبة التوافق</span></div>
+    <div class="mod"><span class="soon">قريبًا</span><b>📝 المقترحات</b><span>المقترح المبدئي والموازنة والمرفقات</span></div>
+    <div class="mod"><span class="soon">قريبًا</span><b>🏛 الجهات المانحة</b><span>دليل الممولين وأولوياتهم</span></div>
+  </div>
+  <p style="margin-top:14px;font-size:13px">بننقل أدوات المنصة لحساب جمعيتك خطوة بخطوة، وهنبلغك أول ما كل جزء يشتغل.</p>
+</div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyCk98_i0ozMuQumsO4PUDpXGRga5aWI4C8",authDomain:"tanmoyeen-masr26.firebaseapp.com",projectId:"tanmoyeen-masr26",
+  storageBucket:"tanmoyeen-masr26.firebasestorage.app",messagingSenderId:"335780209700",appId:"1:335780209700:web:c2839bb31364b5b18664b1"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(),db=firebase.firestore();auth.languageCode='ar';
+if(window.TM_EMU){auth.useEmulator(TM_EMU.auth);db.useEmulator('127.0.0.1',TM_EMU.fs)}
+const PORTAL=location.origin+location.pathname;
+const $=id=>document.getElementById(id);
+const show=v=>['v-load','v-login','v-state','v-dash'].forEach(x=>$(x).classList.toggle('hide',x!==v));
+const msg=(id,t,ok)=>{const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=t};
+const fmt=d=>d.toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
+const ERR={'auth/invalid-credential':'الإيميل أو كلمة المرور غلط','auth/wrong-password':'الإيميل أو كلمة المرور غلط','auth/user-not-found':'الإيميل أو كلمة المرور غلط',
+  'auth/invalid-email':'الإيميل مكتوب غلط','auth/too-many-requests':'محاولات كتير. استنى شوية أو غيّر كلمة المرور من «نسيت كلمة المرور»','auth/network-request-failed':'مفيش اتصال بالإنترنت',
+  'auth/user-disabled':'الحساب ده متوقف. تواصل معانا'};
+const em=e=>ERR[e&&e.code]||('حصلت مشكلة: '+((e&&e.message)||e));
+
+$('f-login').onsubmit=async e=>{e.preventDefault();const b=$('b-login');b.disabled=true;b.textContent='⏳ جاري الدخول…';
+  try{await auth.signInWithEmailAndPassword($('email').value.trim(),$('pass').value)}catch(x){msg('m-login',em(x))}
+  b.disabled=false;b.textContent='دخول'};
+$('b-forgot').onclick=async()=>{const e=$('email').value.trim();if(!e){msg('m-login','اكتب إيميل الجمعية الأول وبعدين دوس «نسيت كلمة المرور»');$('email').focus();return}
+  try{await auth.sendPasswordResetEmail(e,{url:PORTAL})}catch(x){if(x.code==='auth/invalid-email'){msg('m-login',em(x));return}}
+  // نفس الرسالة سواء الإيميل مسجل أو لأ، علشان محدش يعرف مين مشترك
+  msg('m-login','لو الإيميل ده مسجل عندنا، هيوصله خلال دقايق رابط لتعيين كلمة مرور جديدة. بص كمان على الـ Spam.',true)};
+document.querySelectorAll('[data-out]').forEach(b=>b.onclick=()=>auth.signOut());
+$('b-chmail').onclick=()=>{$('f-mail').classList.remove('hide');$('nmail').focus()};
+$('b-mailx').onclick=()=>$('f-mail').classList.add('hide');
+$('f-mail').onsubmit=async e=>{e.preventDefault();const u=auth.currentUser,ne=$('nmail').value.trim().toLowerCase(),b=$('b-mail');
+  if(ne===u.email){msg('m-dash','ده نفس الإيميل الحالي');return}
+  b.disabled=true;
+  try{await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,$('cpass').value));
+    await u.verifyBeforeUpdateEmail(ne,{url:PORTAL});$('f-mail').classList.add('hide');$('cpass').value='';
+    msg('m-dash','📧 بعتنا رابط تأكيد على '+ne+'. الإيميل هيتغير أول ما تدوس على الرابط، وبعدها ادخل بالإيميل الجديد. لحد كده الدخول بالإيميل الحالي.',true)}
+  catch(x){msg('m-dash',x.code==='auth/email-already-in-use'?'الإيميل ده عليه حساب تاني':em(x))}
+  b.disabled=false};
+$('b-chpass').onclick=async()=>{try{await auth.sendPasswordResetEmail(auth.currentUser.email,{url:PORTAL});msg('m-dash','📧 بعتنالك رابط تغيير كلمة المرور على '+auth.currentUser.email,true)}catch(x){msg('m-dash',em(x))}};
+
+let ORG=null,ORGID=null,ME=null,MEMS=[];
+const ROLE={owner:'مدير الحساب',editor:'مُعِد',reviewer:'مراجع'};
+const ROLEH={owner:'تضيف الزملاء وتدير الفريق وتعدّل كل حاجة',editor:'تكتب وتعدّل الملف التعريفي والمقترحات والموازنة',reviewer:'تقرا وتكتب ملاحظات من غير ما تعدّل'};
+function blocked(ic,t,p){$('s-ic').textContent=ic;$('s-t').textContent=t;$('s-p').textContent=p;$('m-state').className='msg';const b=$('s-req');b.disabled=false;b.textContent='ابعت طلب للإدارة';show('v-state')}
+// الطلب بيوصل لصندوق «رسائل التواصل» في لوحة الأدمن
+$('s-req').onclick=async()=>{const b=$('s-req'),u=auth.currentUser;b.disabled=true;
+  try{await db.collection('contact_messages').add({name:(ORG&&ORG.name)||u.email,info:u.email,type:'منصة الفرص: حساب جمعية',
+      msg:$('s-t').textContent+' — '+$('s-p').textContent,timestamp:firebase.firestore.FieldValue.serverTimestamp(),status:'unread'});
+    b.textContent='✅ اتبعت';msg('m-state','وصلنا طلبك وهنتواصل معاك على الإيميل أو الموبايل المسجل.',true)}
+  catch(x){b.disabled=false;msg('m-state',em(x))}};
+
+// ---------- فريق الجمعية ----------
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const seats=()=>+(ORG&&ORG.seats)||3;
+const activeCount=()=>MEMS.filter(m=>m.status==='active').length;
+async function loadTeam(){const s=await db.collection('orgs').doc(ORGID).collection('members').get();
+  MEMS=s.docs.map(d=>({...d.data(),uid:d.id})).sort((a,b)=>(a.role==='owner'?0:1)-(b.role==='owner'?0:1));renderTeam()}
+function renderTeam(){const own=ME.role==='owner',full=activeCount()>=seats();
+  $('t-seats').textContent=activeCount()+' من '+seats()+' مستخدمين';
+  $('t-list').innerHTML=MEMS.map(m=>{const me=m.uid===auth.currentUser.uid;
+    return `<div class="row" style="align-items:center;padding:8px 0;border-top:1px solid var(--line);gap:8px">
+      <div style="flex:1;min-width:180px"><b>${esc(m.name||m.email.split('@')[0])}${me?' (إنت)':''}</b> <span class="pill" style="font-size:11px;${m.status==='active'?'background:#eef3ff;color:var(--pri)':'background:#fbe6e6;color:var(--red)'}">${ROLE[m.role]||m.role}${m.status!=='active'?' · موقوف':''}</span>
+        <div dir="ltr" style="text-align:right;font-size:12.5px;color:var(--mut)">${esc(m.email)}</div></div>
+      ${own&&!me?`<select data-role="${m.uid}" style="padding:8px;border:1px solid #d3dee8;border-radius:10px;font:inherit"><option value="editor"${m.role==='editor'?' selected':''}>مُعِد</option><option value="reviewer"${m.role==='reviewer'?' selected':''}>مراجع</option></select>
+        <button class="btn ghost" data-tog="${m.uid}" style="width:auto;margin:0;padding:8px 12px;font-size:13px">${m.status==='active'?'⏸ إيقاف':'▶ تشغيل'}</button>
+        <button class="btn ghost" data-rst="${esc(m.email)}" style="width:auto;margin:0;padding:8px 12px;font-size:13px">🔑 رابط كلمة المرور</button>`:''}</div>`}).join('');
+  $('b-addopen').classList.toggle('hide',!own||!$('f-add').classList.contains('hide'));$('b-addopen').disabled=full;
+  $('t-help').textContent=own?(full?'وصلت للحد الأقصى ('+seats()+' مستخدمين). أوقف حد علشان تضيف غيره، أو كلمنا لو محتاج أكتر.':'كل زميل بيدخل بإيميله وكلمة مروره هو. المُعِد يكتب ويعدّل، والمراجع يقرا ويكتب ملاحظات بس.')
+    :'دورك: '+ROLE[ME.role]+': '+ROLEH[ME.role]+'. مدير الحساب هو اللي بيضيف الزملاء.';
+  document.querySelectorAll('[data-role]').forEach(x=>x.onchange=()=>updMember(x.dataset.role,{role:x.value},'✅ اتغير الدور'));
+  document.querySelectorAll('[data-tog]').forEach(x=>x.onclick=()=>{const m=MEMS.find(y=>y.uid===x.dataset.tog);
+    if(m.status!=='active'&&activeCount()>=seats()){msg('m-team','وصلت للحد الأقصى للمستخدمين');return}
+    if(m.status==='active'&&!confirm('إيقاف '+(m.name||m.email)+'؟ مش هيقدر يدخل لحد ما تشغله تاني.'))return;
+    updMember(m.uid,{status:m.status==='active'?'disabled':'active'},m.status==='active'?'⏸ اتوقف':'▶ اتشغل')});
+  document.querySelectorAll('[data-rst]').forEach(x=>x.onclick=async()=>{try{await auth.sendPasswordResetEmail(x.dataset.rst,{url:PORTAL});msg('m-team','📧 اتبعت رابط كلمة المرور لـ '+x.dataset.rst,true)}catch(e){msg('m-team',em(e))}})}
+async function updMember(uid,data,ok){try{await db.collection('orgs').doc(ORGID).collection('members').doc(uid).update(data);msg('m-team',ok,true);await loadTeam()}catch(e){msg('m-team',e.code==='permission-denied'?'مش مسموح':em(e))}}
+$('b-addopen').onclick=()=>{$('f-add').classList.remove('hide');$('b-addopen').classList.add('hide');$('a-name').focus()};
+$('b-addx').onclick=()=>{$('f-add').classList.add('hide');renderTeam()};
+// إضافة زميل: الحساب بيتعمل من تطبيق Firebase تاني علشان مدير الحساب مايخرجش
+function secAuth(){const app=firebase.apps.find(a=>a.name==='tmTeam')||firebase.initializeApp(firebaseConfig,'tmTeam');const a=app.auth();a.languageCode='ar';if(window.TM_EMU&&!a._e){a.useEmulator(TM_EMU.auth);a._e=1}return a}
+$('f-add').onsubmit=async e=>{e.preventDefault();const b=$('b-add'),email=$('a-email').value.trim().toLowerCase(),name=$('a-name').value.trim(),role=$('a-role').value;
+  if(activeCount()>=seats()){msg('m-team','وصلت للحد الأقصى للمستخدمين');return}
+  if(MEMS.some(m=>m.email===email)){msg('m-team','الإيميل ده موجود في الفريق بالفعل');return}
+  b.disabled=true;b.textContent='⏳ جاري الإضافة…';const sa=secAuth();
+  try{const pw=Array.from(crypto.getRandomValues(new Uint8Array(24)),x=>('0'+x.toString(16)).slice(-2)).join('')+'Aa1!';
+    let uid;try{uid=(await sa.createUserWithEmailAndPassword(email,pw)).user.uid}
+    catch(x){throw new Error(x.code==='auth/email-already-in-use'?'الإيميل ده عليه حساب على المنصة بالفعل (ممكن يكون تبع جمعية تانية). استخدم إيميل تاني أو كلمنا.':x.code==='auth/invalid-email'?'الإيميل مكتوب غلط':em(x))}
+    const now=firebase.firestore.FieldValue.serverTimestamp(),by=auth.currentUser.email,bt=db.batch();
+    bt.set(db.collection('orgs').doc(ORGID).collection('members').doc(uid),{email,name,role,status:'active',addedAt:now,addedBy:by});
+    bt.set(db.collection('users').doc(uid),{orgId:ORGID,addedAt:now,addedBy:by});
+    await bt.commit();
+    await sa.sendPasswordResetEmail(email,{url:PORTAL});
+    $('f-add').reset();$('f-add').classList.add('hide');msg('m-team','✅ اتضاف '+name+' كـ'+ROLE[role]+'، وهيوصله إيميل يحط منه كلمة المرور.',true);await loadTeam()}
+  catch(x){msg('m-team',x.message||em(x))}
+  finally{try{await sa.signOut()}catch(_){}b.disabled=false;b.textContent='إضافة وإرسال رابط كلمة المرور'}};
+
+auth.onAuthStateChanged(async u=>{
+  if(!u){show('v-login');return}
+  show('v-load');let us,ms,s;
+  try{us=await db.collection('users').doc(u.uid).get()}catch(e){blocked('⚠️','مش قادرين نحمّل بيانات الحساب','جرّب تاني بعد شوية. لو المشكلة فضلت تواصل معانا.');return}
+  if(!us.exists){ORG=null;blocked('🔒','الإيميل ده مش مربوط بحساب جمعية','لو جمعيتك مشتركة، اطلب من مدير الحساب يضيفك، أو تواصل معانا.');return}
+  ORGID=us.data().orgId;
+  try{ms=await db.collection('orgs').doc(ORGID).collection('members').doc(u.uid).get()}catch(e){ms=null}
+  if(!ms||!ms.exists||ms.data().status!=='active'){ORG=null;blocked('⏸','حسابك في فريق الجمعية متوقف','كلّم مدير حساب جمعيتك علشان يشغله تاني.');return}
+  ME={...ms.data(),uid:u.uid};
+  const up={lastLogin:firebase.firestore.FieldValue.serverTimestamp()};if(u.email&&u.email!==ME.email)up.email=u.email;// بعد تغيير الإيميل
+  db.collection('orgs').doc(ORGID).collection('members').doc(u.uid).update(up).catch(()=>{});
+  try{s=await db.collection('orgs').doc(ORGID).get()}catch(e){blocked('⚠️','مش قادرين نحمّل بيانات الجمعية','جرّب تاني بعد شوية.');return}
+  const o=ORG=s.data(),until=o.paidUntil&&o.paidUntil.toDate?o.paidUntil.toDate():null;
+  if(ME.role==='owner'&&u.email&&o.email!==u.email)db.collection('orgs').doc(ORGID).update({email:u.email}).catch(()=>{});// إيميل الجمعية الرسمي = إيميل مدير الحساب
+  if(o.status!=='active'){blocked('⏸','الحساب متوقف مؤقتًا','حساب «'+(o.name||'')+'» متوقف حاليًا. تواصل معانا علشان نرجّع تشغيله.');return}
+  if(!until||until<new Date()){blocked('⏳','الاشتراك انتهى',(until?'اشتراك «'+(o.name||'')+'» انتهى يوم '+fmt(until)+'. ':'')+'جدد الاشتراك وهنفعّل الحساب تاني على طول.');return}
+  const days=Math.ceil((until-new Date())/864e5);
+  $('d-name').textContent=o.name||u.email;$('d-me').textContent=(ME.name||u.email)+' · '+ROLE[ME.role];$('d-until').textContent=fmt(until);
+  $('l-nmail').textContent=ME.role==='owner'?'الإيميل الجديد (هيبقى الإيميل الرسمي للجمعية)':'إيميلك الجديد';
+  const p=$('d-pill');if(days<=7){p.textContent='الاشتراك قرب يخلص';p.style.cssText='color:#a86300;background:#fdf0d7'}else{p.textContent='الحساب نشط';p.style.cssText='color:#0f8a5f;background:#e0f4ec'}
+  $('d-left').textContent='باقي '+days+' يوم';document.title=(o.name||'')+' | منصة الفرص';show('v-dash');
+  loadTeam().catch(e=>msg('m-team',em(e)))});
+</script>
+</body>
+</html>
