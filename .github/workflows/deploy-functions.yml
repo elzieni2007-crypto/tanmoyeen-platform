@@ -1,0 +1,23 @@
+name: نشر دالة الذكاء الاصطناعي
+on:
+  push:
+    branches: [main]
+    paths: ['functions/**', 'firebase.json', '.github/workflows/deploy-functions.yml']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --omit=dev
+        working-directory: functions
+      - name: Service account
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+      - name: Deploy
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npx --yes firebase-tools@13 deploy --only functions:platform --project tanmoyeen-masr26 --non-interactive --force
