@@ -23,7 +23,7 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .pill{display:inline-block;border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:800}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
-.mod{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.mod b{display:block;margin-bottom:4px}.mod span{font-size:13px;color:var(--mut)}
+.mod{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.mod b{display:block;margin-bottom:4px}.mod span{font-size:13px;color:var(--mut)}
 .soon{float:left;font-size:11px;background:#fdf0d7;color:var(--amb);border-radius:999px;padding:1px 8px;font-weight:700}
 .state{text-align:center}.state .ic{font-size:42px;margin-bottom:6px}
 .row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{width:auto;flex:1;margin-top:10px}
@@ -93,12 +93,11 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
     <div class="msg" id="m-team"></div>
   </div>
   <div class="grid">
-    <div class="mod"><span class="soon">قريبًا</span><b>🔎 الفرص المناسبة لجمعيتك</b><span>فرص التمويل المفتوحة مع نسبة التوافق مع الملف التعريفي</span></div>
-    <div class="mod"><span class="soon">قريبًا</span><b>🏢 الملف التعريفي للجمعية</b><span>بيانات الجمعية اللي بتتحسب منها نسبة التوافق</span></div>
-    <div class="mod"><span class="soon">قريبًا</span><b>📝 المقترحات</b><span>المقترح المبدئي والموازنة والمرفقات</span></div>
-    <div class="mod"><span class="soon">قريبًا</span><b>🏛 الجهات المانحة</b><span>دليل الممولين وأولوياتهم</span></div>
+    <a class="mod" href="app.html"><b>🔎 الفرص المناسبة لجمعيتك</b><span>فرص التمويل المفتوحة مرتبة حسب نسبة التوافق مع ملفكم التعريفي</span></a>
+    <a class="mod" href="app.html"><b>🏢 الملف التعريفي للجمعية</b><span>ابدأوا بيه: نسبة التوافق وجودة المقترح مبنيين عليه</span></a>
+    <a class="mod" href="app.html"><b>📝 المقترحات والموازنة</b><span>الفكرة والمقترح بالعربي والإنجليزي وإيميل التقديم والموازنة</span></a>
+    <a class="mod" href="app.html"><b>🏛 دليل الممولين</b><span>الجهات المانحة في مصر ومجالاتها وطريقة التقديم ليها</span></a>
   </div>
-  <p style="margin-top:14px;font-size:13px">بننقل أدوات المنصة لحساب جمعيتك خطوة بخطوة، وهنبلغك أول ما كل جزء يشتغل.</p>
 </div>
 
 <script src="vendor/firebase-app-compat.js"></script>
@@ -200,6 +199,8 @@ auth.onAuthStateChanged(async u=>{
   if(!u){show('v-login');return}
   show('v-load');let us,ms,s;
   try{us=await db.collection('users').doc(u.uid).get()}catch(e){blocked('⚠️','مش قادرين نحمّل بيانات الحساب','جرّب تاني بعد شوية. لو المشكلة فضلت تواصل معانا.');return}
+  // أول دخول بعد إنشاء الحساب مباشرة: ممكن مستند الربط يتأخر ثواني، فنعيد المحاولة قبل ما نقول إن الحساب مش مربوط
+  for(let i=0;i<3&&!us.exists;i++){await new Promise(r=>setTimeout(r,1500));try{await u.getIdToken(true);us=await db.collection('users').doc(u.uid).get({source:'server'})}catch(e){}}
   if(!us.exists){ORG=null;blocked('🔒','الإيميل ده مش مربوط بحساب جمعية','لو جمعيتك مشتركة، اطلب من مدير الحساب يضيفك، أو تواصل معانا.');return}
   ORGID=us.data().orgId;
   try{ms=await db.collection('orgs').doc(ORGID).collection('members').doc(u.uid).get()}catch(e){ms=null}
