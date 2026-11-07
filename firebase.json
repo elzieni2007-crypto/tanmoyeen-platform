@@ -1,5 +1,5 @@
 {
   "functions": [
-    { "source": "functions", "codebase": "platform", "runtime": "nodejs20" }
+    { "source": "functions", "codebase": "platform", "runtime": "nodejs22" }
   ]
 }
