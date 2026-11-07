@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with: { node-version: 22 }
       - run: npm install --omit=dev
         working-directory: functions
       - name: Service account
@@ -20,4 +20,4 @@ jobs:
       - name: Deploy
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: npx --yes firebase-tools@13 deploy --only functions:platform --project tanmoyeen-masr26 --non-interactive --force
+        run: npx --yes firebase-tools@14 deploy --only functions:platform --project tanmoyeen-masr26 --non-interactive --force
