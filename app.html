@@ -2318,6 +2318,87 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 const _propReady=R.proposal;R.proposal=()=>{_propReady();const o=OBY(cur);if(!o||!o.bud)return;const pane=$('budPane');if(!pane||$('bRules'))return;
   const chk=pane.querySelector('.bchk')?.closest('.card');if(chk){chk.insertAdjacentHTML('beforebegin',rulesHTML(o));bindRules(o)}};
 
+// ===== تحسينات بعد تجربة 1: الموازنة ↔ المقترح، تحديث الترجمة بالأجزاء المتغيرة بس، استكمال البيانات الناقصة =====
+
+// ---------- 1) «حدّث المقترح من الموازنة» بيغيّر المبلغ في كل المقترح، مش قسم الموازنة بس ----------
+const _arDig=s=>String(s).replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const _numVariants=v=>{v=Math.round(v);const a=[num(v),v.toLocaleString('en-US'),String(v)];return [...new Set(a.concat(a.map(_arDig)))].filter(x=>x.replace(/\D/g,'').length>=4)};
+const _rxEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function replaceAmounts(root,skip,pairs){let n=0;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  nodes.forEach(t=>{if(skip.some(s=>s.contains(t)))return;let x=t.textContent,ch=false;
+    pairs.forEach(([from,to])=>{_numVariants(from).forEach(v=>{const rx=new RegExp('(^|[^0-9٠-٩.,،])'+_rxEsc(v)+'(?![0-9٠-٩]|[.,،][0-9٠-٩])','g');x=x.replace(rx,(m,p)=>{n++;ch=true;return p+num(to)})})});
+    if(ch)t.textContent=x});return n}
+const _b2pU=budgetToProposal;
+budgetToProposal=function(o){if(!o.prop||!o.bud)return _b2pU(o);
+  const t=bTotals(o.bud),nD=Math.round(t.donor),nT=Math.round(t.total),pr=propParams(o);
+  const oldD=[...new Set([o.prop.budDonor,o.pp&&o.pp.amount,pr.amount].filter(v=>v&&Math.round(v)!==nD).map(Math.round))];
+  const oldT=[...new Set([o.prop.budTotal].filter(v=>v&&Math.round(v)!==nT).map(Math.round))];
+  _b2pU(o);if(!o.prop)return;
+  const d=document.createElement('div');d.innerHTML=o.prop.html;
+  const skip=[...d.querySelectorAll('section')].filter(s=>/خطة العمل|الخطة الزمنية|الجدول الزمني|الميزانية|الموازنة/.test(s.querySelector('h2')?.textContent||'')&&!/المتابعة/.test(s.querySelector('h2')?.textContent||''));
+  const n=replaceAmounts(d,skip,oldD.map(v=>[v,nD]).concat(oldT.map(v=>[v,nT])));
+  o.prop.html=d.innerHTML;o.prop.budDonor=nD;o.prop.budTotal=nT;o.prop.upd=Date.now();o.prop._dirty=true;
+  o.pp=Object.assign({},o.pp||{},{amount:nD});saveO();R.proposal();
+  toast(n?`اتحدثت الموازنة في المقترح، واتغير المبلغ المطلوب في ${n} مكان تاني (الغلاف والملخص…) لـ ${num(nD)}`:`اتحدث قسم الموازنة والخطة. المبلغ المطلوب من المانح دلوقتي ${num(nD)}`)};
+
+// ---------- 2) الترجمة: الفقرات اللي اتترجمت قبل كده ومتغيرتش مش بتتبعت تاني ----------
+// بنحفظ النسخة العربية اللي اتترجمت منها (src)، وقبل أي ترجمة جديدة بنطابق فقراتها مع النسخة الإنجليزية الحالية
+// (حتى لو اتعدلت بالإيد)، فبيتترجم الجديد والمتغير بس، زي قسم الموازنة وخطة العمل بعد تحديثهم.
+const _leafAll=root=>[...root.querySelectorAll(BLOCK)].filter(el=>!el.querySelector(BLOCK));
+function trMemory(o){const m={};const en=o.propEn;if(!en||!en.src||!en.html)return m;
+  const a=document.createElement('div');a.innerHTML=en.src;const b=document.createElement('div');b.innerHTML=en.html;
+  const A=_leafAll(a),Bl=_leafAll(b);if(A.length!==Bl.length)return m;
+  A.forEach((el,i)=>{if(!/[؀-ۿ]/.test(el.textContent))return;const ar=ser(el),tx=ser(Bl[i]);if(tx&&tx!==ar&&!/[؀-ۿ]{4}/.test(tx.replace(/\[\[[^\]]*\]\]/g,'')))m[ar]=tx});return m}
+let TR_MEM=null;
+// الترجمة بـ Sonnet بدل Opus في منصة الجمعيات: نفس الجودة تقريبًا للترجمة، وبنص التكلفة
+const _trChunk0=translateChunk;
+const _trChunk=window.FP?async function(strs,idx,signal,onPart){const _S=SAMPLE;try{SAMPLE=Object.assign((p,op)=>_S(p,Object.assign({},op,{modelTier:'std'})),_S);return await _trChunk0(strs,idx,signal,onPart)}finally{SAMPLE=_S}}:_trChunk0;
+translateChunk=async function(strs,idx,signal,onPart){if(!TR_MEM)return _trChunk(strs,idx,signal,onPart);
+  const hit={},need=[];idx.forEach(i=>{const c=TR_MEM[strs[i]];if(c)hit[i]=c;else need.push(i)});
+  if(onPart&&Object.keys(hit).length)onPart(Object.assign({},hit));if(!need.length)return hit;
+  const r=await _trChunk(strs,need,signal,onPart?p=>onPart(Object.assign({},hit,p)):null);return Object.assign(hit,r)};
+const _trProp=translateProposal;
+translateProposal=async function(o){TR_MEM=trMemory(o);const srcNow=o.prop.html;const t0=Date.now();
+  try{await _trProp(o)}finally{TR_MEM=null;if(o.propEn&&o.propEn.at>=t0){o.propEn.src=srcNow;saveEn(o)}}};
+saveEn=function(o){if(MODE==='db')DB.doc('proposals/'+o.id+'-en').set({html:o.propEn.html,at:o.propEn.at,from:o.propEn.from||0,src:o.propEn.src||''}).catch(dbErr);else saveO()};
+
+// ---------- 3) استكمال البيانات الناقصة ----------
+// كل علامة [[…]] في المقترح بتظهر كسؤال في فورم واحد. الإجابة بتتحط مكان كل العلامات اللي بنفس النص،
+// وبتتحفظ في «بيانات أكدتها الجمعية» علشان أي مقترح جاي يستخدمها ومايسألش عنها تاني.
+const phList=o=>{if(!o.prop)return [];const d=document.createElement('div');d.innerHTML=o.prop.html;const m=new Map();
+  d.querySelectorAll('.ph-hint').forEach(s=>{const k=s.textContent.replace(/^\[+|\]+$/g,'').trim();if(!k)return;const sec=s.closest('section')?.querySelector('h2')?.textContent.trim()||'';
+    if(!m.has(k))m.set(k,{k,n:0,sec});m.get(k).n++});return [...m.values()]};
+let fillOpen=false;
+function fillHTML(o){const L=phList(o);if(!L.length)return '<div class="card"><b>✅ مفيش بيانات ناقصة في المقترح</b></div>';
+  return `<div class="card" id="fillBox"><div class="sec-t"><h3>📝 استكمل البيانات الناقصة (${L.length})</h3><button class="btn line" id="fillClose">قفل</button></div>
+   <p class="muted" style="margin-top:0">اكتب المعلومة الحقيقية من بيانات جمعيتكم. اللي مش عارفه دلوقتي سيبه فاضي ويفضل متعلّم في المقترح. الإجابة بتتحط في كل الأماكن اللي فيها نفس السؤال.</p>
+   <div class="form">${L.map((x,i)=>`<div class="field full"><label for="fl${i}">${esc(x.k)}${x.n>1?` <span class="muted">(${x.n} أماكن)</span>`:''}${x.sec?` <span class="muted">· ${esc(x.sec)}</span>`:''}</label><input id="fl${i}" data-k="${esc(x.k)}"></div>`).join('')}</div>
+   <label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="flKeep" checked> احفظ الإجابات في بيانات الجمعية علشان المقترحات الجاية</label>
+   <div class="toolbar"><button class="btn" id="fillApply">طبّق على المقترح</button></div></div>`}
+function applyFill(o){const ans=[...document.querySelectorAll('#fillBox input[data-k]')].map(i=>[i.dataset.k,i.value.trim()]).filter(([,v])=>v);
+  if(!ans.length){toast('مكتبتش ولا إجابة');return}const A=new Map(ans);const d=document.createElement('div');d.innerHTML=o.prop.html;let n=0;
+  d.querySelectorAll('.ph-hint').forEach(s=>{const k=s.textContent.replace(/^\[+|\]+$/g,'').trim();if(A.has(k)){s.replaceWith(document.createTextNode(A.get(k)));n++}});
+  o.prop.html=d.innerHTML;o.prop.upd=Date.now();o.prop._dirty=true;o.prop.okNums=[...new Set([...(o.prop.okNums||[]),...ans.map(([,v])=>v).filter(v=>/\d/.test(v))])];
+  if($('flKeep')?.checked){P.facts=(P.facts||[]).filter(f=>!A.has(f.q)).concat(ans.map(([q,a])=>({q,a,at:Date.now(),opp:o.id})));if(P.facts.length>200)P.facts=P.facts.slice(-200);saveP()}
+  saveO();fillOpen=false;R.proposal();toast(`اتحطت ${n} معلومة في المقترح`)}
+const _rpU=R.proposal;
+R.proposal=function(){_rpU();const o=OBY(cur);if(!o||!o.prop)return;
+  if(propTab==='ar'){const L=phList(o);const bar=document.querySelector('#proposal .docbar');
+    if(bar&&L.length&&!$('fillBtn')){const b=document.createElement('button');b.className='btn';b.id='fillBtn';b.style.cssText='background:#f59e0b;border-color:#f59e0b';b.textContent=`📝 استكمل البيانات الناقصة (${L.length})`;bar.appendChild(b);
+      b.onclick=()=>{fillOpen=!fillOpen;R.proposal();if(fillOpen)$('fillBox')?.scrollIntoView({behavior:'smooth',block:'start'})}}
+    if(fillOpen&&bar){bar.insertAdjacentHTML('afterend',fillHTML(o));const c=$('fillClose');if(c)c.onclick=()=>{fillOpen=false;R.proposal()};const ap=$('fillApply');if(ap)ap.onclick=()=>applyFill(o)}}
+  if(propTab==='en'&&o.propEn&&o.propEn.src){const tb=$('trBtn');if(tb&&propChanged(o))tb.lastChild&&(tb.lastChild.textContent='حدّث الترجمة (الأجزاء اللي اتغيرت بس)')}};
+
+// المعلومات اللي أكدتها الجمعية تدخل في كل كتابة جاية، والأجزاء الوصفية تتكتب كاملة
+const FACTS_TXT=()=>(P.facts&&P.facts.length)?`
+
+معلومات أكدتها الجمعية بنفسها (استخدمها بدل العلامات لما تحتاجها، وماتسألش عنها تاني):
+${P.facts.slice(-60).map(f=>`- ${f.q}: ${f.a}`).join('\n')}`:'';
+const WRITE_FULL=`
+و. العلامات [[…]] للأرقام والحقائق والأسماء والمصادر بس. الأجزاء الوصفية (المنهجية، وشرح الأنشطة وخطواتها، وطريقة الاختيار، والمخاطر وطرق التعامل معاها، ونظام المتابعة والتقييم، والاستدامة، والحماية) اكتبها كاملة بصياغة محددة مبنية على بيانات الجمعية والفكرة المعتمدة، من غير علامات.`;
+const _apU=aiPrompt;aiPrompt=function(o,keys,prev){return _apU(o,keys,prev)+WRITE_FULL+FACTS_TXT()};
+if(typeof donorPrompt==='function'){const _dpU=donorPrompt;donorPrompt=function(o,items,prev){return _dpU(o,items,prev)+WRITE_FULL+FACTS_TXT()}}
+
 // records written by hand or by the daily search can carry a list as text; one bad field must not break scoring and filters for every card
 function fixOpp(o){const L=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'&&x):typeof v==='string'&&v.trim()?v.split(/[،,]\s*/).map(x=>x.trim()).filter(Boolean):[];
   if(o.geo!=='all'){const g=L(o.geo);o.geo=g.length?g:'all'}['th','groups','reqs','sizes'].forEach(k=>{if(k in o||k!=='sizes')o[k]=L(o[k])});
