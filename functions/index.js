@@ -81,3 +81,58 @@ exports.fpai=onRequest({secrets:[KEY],region:'us-central1',cors:ORIGINS.concat(p
     await logUsage(me.orgId,tier,model,out.usage);res.write(JSON.stringify({end:true,truncated:out.stop==='max_tokens'})+'\n');res.end()}
   catch(e){if(ctl.signal.aborted)return;res.write(JSON.stringify({err:e.message})+'\n');res.end()}
 });
+
+// ===== fpteam: ربط الأشخاص بالجمعيات =====
+// الموقع الرئيسي والمنصة على نفس نظام الدخول، فالإيميل ممكن يكون عليه حساب بالفعل (مورد، باحث عن عمل، مؤسسة…).
+// الدالة دي بتربط الحساب الموجود بالجمعية بدل ما تعمل حساب جديد، وبتسمح لنفس الشخص يبقى في أكتر من جمعية.
+// users/{uid}: orgs = كل الجمعيات اللي هو فيها، orgId = الجمعية المفتوحة دلوقتي.
+const ROLES=['owner','editor','reviewer'];
+const caller=async req=>{const h=req.get('Authorization')||'';const m=h.match(/^Bearer (.+)$/);if(!m)throw [401,'لازم تسجل دخول الأول'];
+  try{return await admin.auth().verifyIdToken(m[1])}catch(e){throw [401,'انتهت جلسة الدخول. سجل دخول تاني']}};
+const orgOk=o=>{const u=o&&o.paidUntil&&o.paidUntil.toDate?o.paidUntil.toDate():null;return !!o&&o.status==='active'&&!!u&&u>new Date()};
+const rndPw=()=>require('crypto').randomBytes(24).toString('base64url')+'Aa1!';
+
+exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.FP_EXTRA_ORIGIN?[process.env.FP_EXTRA_ORIGIN]:[]),maxInstances:10},async(req,res)=>{
+  if(req.method!=='POST')return bad(res,405,'POST only');
+  let t;try{t=await caller(req)}catch(e){return bad(res,e[0],e[1])}
+  const isAdm=t.email===ADMIN_EMAIL,b=req.body||{},action=b.action;
+  try{
+    if(action==='mine'){
+      const u=await db.doc('users/'+t.uid).get();const ud=u.data()||{};const ids=[...new Set([...(ud.orgs||[]),...(ud.orgId?[ud.orgId]:[])])];
+      const out=[];for(const id of ids){const [o,m]=await Promise.all([db.doc('orgs/'+id).get(),db.doc('orgs/'+id+'/members/'+t.uid).get()]);if(!o.exists||!m.exists)continue;
+        const od=o.data(),md=m.data();out.push({orgId:id,name:od.name||'',role:md.role,status:md.status,orgActive:orgOk(od)})}
+      return res.json({current:ud.orgId||'',orgs:out})}
+    if(action==='switch'){
+      const orgId=String(b.orgId||'');const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();
+      if(!m.exists||m.data().status!=='active')return bad(res,403,'إنت مش عضو نشط في الجمعية دي');
+      await db.doc('users/'+t.uid).set({orgId,orgs:FieldValue.arrayUnion(orgId)},{merge:true});return res.json({ok:true})}
+    if(action==='add'){
+      const orgId=String(b.orgId||''),email=String(b.email||'').trim().toLowerCase(),name=String(b.name||'').trim().slice(0,120),role=String(b.role||'');
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return bad(res,400,'الإيميل مكتوب غلط');
+      if(!ROLES.includes(role))return bad(res,400,'الدور مش صحيح');
+      const oRef=db.doc('orgs/'+orgId),o=await oRef.get();if(!orgId||!o.exists)return bad(res,404,'الجمعية مش موجودة');
+      const od=o.data();
+      if(!isAdm){
+        const me=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();const md=me.data()||{};
+        if(md.role!=='owner'||md.status!=='active')return bad(res,403,'إضافة الزملاء لمدير حساب الجمعية بس');
+        if(!orgOk(od))return bad(res,403,'اشتراك الجمعية متوقف أو منتهي');
+        if(role==='owner')return bad(res,403,'مدير الحساب واحد بس، والإدارة هي اللي تغيره');
+        const act=await oRef.collection('members').where('status','==','active').get();
+        if(act.size>=(+od.seats||3))return bad(res,409,'وصلت للحد الأقصى للمستخدمين');
+      }
+      let user,existed=true;
+      try{user=await admin.auth().getUserByEmail(email)}catch(e){if(e.code!=='auth/user-not-found')throw e;existed=false;
+        user=await admin.auth().createUser({email,password:rndPw(),displayName:name||undefined})}
+      const mRef=oRef.collection('members').doc(user.uid),mm=await mRef.get();
+      if(mm.exists&&!(isAdm&&role==='owner'))return bad(res,409,mm.data().status==='active'?'الشخص ده موجود في الفريق بالفعل':'الشخص ده في الفريق بس موقوف. شغّله من قائمة الفريق');
+      const now=FieldValue.serverTimestamp(),uRef=db.doc('users/'+user.uid),ud=(await uRef.get()).data()||{};
+      let keepCur=false;if(ud.orgId&&ud.orgId!==orgId){const cm=await db.doc('orgs/'+ud.orgId+'/members/'+user.uid).get();keepCur=cm.exists&&cm.data().status==='active'}
+      const bt=db.batch();
+      bt.set(mRef,{email,name:name||(mm.exists?mm.data().name:'')||'',role,status:'active',addedAt:now,addedBy:t.email||''},{merge:true});
+      bt.set(uRef,Object.assign({orgs:FieldValue.arrayUnion(orgId)},keepCur?{}:{orgId}),{merge:true});
+      if(role==='owner')bt.update(oRef,{ownerUid:user.uid,email,updatedAt:now});
+      await bt.commit();
+      return res.json({ok:true,uid:user.uid,existed})}
+    return bad(res,400,'طلب غير معروف')}
+  catch(e){console.error('fpteam',e);return bad(res,500,'حصلت مشكلة: '+(e.message||e))}
+});
