@@ -394,6 +394,7 @@ body{background:var(--bg)}
 const CFG={apiKey:"AIzaSyCk98_i0ozMuQumsO4PUDpXGRga5aWI4C8",authDomain:"tanmoyeen-masr26.firebaseapp.com",projectId:"tanmoyeen-masr26",
   storageBucket:"tanmoyeen-masr26.firebasestorage.app",messagingSenderId:"335780209700",appId:"1:335780209700:web:c2839bb31364b5b18664b1"};
 const AI_URL=(window.TM_EMU&&TM_EMU.ai)||'https://us-central1-tanmoyeen-masr26.cloudfunctions.net/fpai';
+const TEAM_URL=(window.TM_EMU&&TM_EMU.team)||'https://us-central1-tanmoyeen-masr26.cloudfunctions.net/fpteam';
 const PORTAL='index.html';
 const ADMIN_EMAIL='elzieni2007@gmail.com';
 firebase.initializeApp(CFG);
@@ -493,7 +494,12 @@ sample.json=async(input,opts={})=>{const r=await callAI({mode:'json',prompt:Stri
 const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=filename||'file';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return {status:'saved'}}};
 const ROLE_AR={owner:'مدير الحساب',editor:'مُعِد',reviewer:'مراجع'};
 const user={name:async()=>{await ready;return ME.name||auth.currentUser.email}};
-window.FP.role=()=>ROLE_AR[ROLE]||'';window.FP.org=()=>ORG;
+window.FP.role=()=>ROLE_AR[ROLE]||'';
+// رصيد الذكاء الاصطناعي للجمعية (اليوم والشهر)
+let _q=null,_qAt=0;
+window.FP.quota=async(force)=>{await ready;if(!force&&_q&&Date.now()-_qAt<30e3)return _q;try{const tok=await auth.currentUser.getIdToken();
+  const r=await fetch(TEAM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'quota',orgId:window.FP.support?ORGID:undefined})});
+  if(r.ok){_q=await r.json();_qAt=Date.now()}}catch(e){}return _q};window.FP.org=()=>ORG;
 window.claude={use:async n=>n==='db'?{doc:docRef,collection:colRef}:n==='sample'?sample:n==='downloads'?downloads:n==='user'?user:null};
 })();
 // ملف تعريفي فاضي للجمعية الجديدة (بدل بيانات المثال)
@@ -2398,6 +2404,15 @@ const WRITE_FULL=`
 و. العلامات [[…]] للأرقام والحقائق والأسماء والمصادر بس. الأجزاء الوصفية (المنهجية، وشرح الأنشطة وخطواتها، وطريقة الاختيار، والمخاطر وطرق التعامل معاها، ونظام المتابعة والتقييم، والاستدامة، والحماية) اكتبها كاملة بصياغة محددة مبنية على بيانات الجمعية والفكرة المعتمدة، من غير علامات.`;
 const _apU=aiPrompt;aiPrompt=function(o,keys,prev){return _apU(o,keys,prev)+WRITE_FULL+FACTS_TXT()};
 if(typeof donorPrompt==='function'){const _dpU=donorPrompt;donorPrompt=function(o,items,prev){return _dpU(o,items,prev)+WRITE_FULL+FACTS_TXT()}}
+
+// ---------- 4) رصيد الذكاء الاصطناعي للجمعية (منصة الجمعيات بس) ----------
+if(window.FP&&FP.quota){
+  const qLine=q=>{if(!q||q.unlimited||!(q.capD>0||q.capM>0))return '';
+    const pd=q.capD>0?Math.min(100,Math.round(q.dayUsd/q.capD*100)):0,pm=q.capM>0?Math.min(100,Math.round(q.monthUsd/q.capM*100)):0,c=Math.max(pd,pm)>=80?'#b33a3a':'#4a5b70';
+    return `<span style="color:${c}">🤖 رصيد جمعيتكم للكتابة بالذكاء الاصطناعي: اتستخدم ${pd}% من حد النهارده و${pm}% من حد الشهر.${Math.max(pd,pm)>=80?' قرب يخلص، فراجعوا الإعدادات كويس قبل ما تكتبوا من الأول.':''}</span>`};
+  const _rpQ=R.proposal;R.proposal=function(){_rpQ();const st=$('aiSt');if(!st)return;FP.quota().then(q=>{const el=$('aiSt');if(!el||!q)return;let x=$('aiQuota');if(!x){x=document.createElement('div');x.id='aiQuota';x.style.cssText='margin-top:6px;font-size:12.5px';el.after(x)}x.innerHTML=qLine(q)})};
+  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#aiBtn,#trBtn'))setTimeout(()=>FP.quota(true).then(()=>{}),60000)},true);
+}
 
 // records written by hand or by the daily search can carry a list as text; one bad field must not break scoring and filters for every card
 function fixOpp(o){const L=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'&&x):typeof v==='string'&&v.trim()?v.split(/[،,]\s*/).map(x=>x.trim()).filter(Boolean):[];
