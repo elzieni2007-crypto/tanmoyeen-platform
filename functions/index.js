@@ -32,15 +32,41 @@ async function who(req){
   if(org.status!=='active'||!until||until<new Date())throw [403,'اشتراك الجمعية متوقف أو منتهي. تواصل مع إدارة تنمويين مصر'];
   if(mem.status!=='active')throw [403,'حسابك متوقف من مدير حساب الجمعية'];
   if(!['owner','editor'].includes(mem.role))throw [403,'صلاحيتك «مراجع» مش بتسمح بالكتابة بالذكاء الاصطناعي'];
-  return {uid:t.uid,orgId,name:mem.name||t.email};
+  return {uid:t.uid,orgId,name:mem.name||t.email,org};
 }
 
+// ===== مراقبة التكلفة =====
+// تكلفة تقديرية بالدولار لكل مليون توكن (داخل، خارج). تقدر تغيرها من fp_meta/ai.rates.
+const RATES0={full:[4,20],std:[2,10],quick:[0.1,0.5]};
+// الحدود الافتراضية لكل جمعية (تقدر تغيرها من شاشة «مالية المنصة» للكل أو لكل جمعية لوحدها)
+// 0 = من غير حد. دلوقتي مراقبة بس، والحدود بتتفعل من شاشة «مالية المنصة» لو احتجناها
+const CAP0={enabled:true,orgMonthUsd:0,orgDayUsd:0,totalMonthUsd:0};
+const cairoDay=()=>new Date(Date.now()+2*3600e3).toISOString().slice(0,10);
+let _cfg=null,_cfgAt=0;
+async function aiCfg(){if(_cfg&&Date.now()-_cfgAt<60e3)return _cfg;const d=await db.doc('fp_meta/ai').get().catch(()=>null);
+  const x=(d&&d.exists&&d.data())||{};_cfg={enabled:x.enabled!==false,orgMonthUsd:+x.orgMonthUsd||0,orgDayUsd:+x.orgDayUsd||0,totalMonthUsd:+x.totalMonthUsd||0,rates:Object.assign({},RATES0,x.rates||{})};_cfgAt=Date.now();return _cfg}
+const usdOf=(cfg,tier,i,o)=>{const r=cfg.rates[tier]||RATES0.full;return (i*r[0]+o*r[1])/1e6};
+async function quota(me){const cfg=await aiCfg(),day=cairoDay(),mon=day.slice(0,7);
+  const [u,tot]=await Promise.all([db.doc(`fp_usage/${me.orgId}_${mon}`).get(),db.doc(`fp_usage/_total_${mon}`).get()]);
+  const ud=u.data()||{},td=tot.data()||{},o=me.org||{};
+  const capM=+o.aiMonthUsd>0?+o.aiMonthUsd:cfg.orgMonthUsd,capD=+o.aiDayUsd>0?+o.aiDayUsd:cfg.orgDayUsd;
+  return {cfg,monthUsd:+ud.usd||0,dayUsd:+((ud.days||{})[day]||{}).usd||0,totalUsd:+td.usd||0,capM,capD,unlimited:o.aiUnlimited===true}}
+async function checkCap(me){if(me.orgId==='_admin')return null;const q=await quota(me);
+  if(!q.cfg.enabled)return 'الكتابة بالذكاء الاصطناعي متوقفة مؤقتًا من الإدارة. جرب بعد شوية أو كلمنا';
+  if(q.unlimited)return null;
+  if(q.cfg.totalMonthUsd>0&&q.totalUsd>=q.cfg.totalMonthUsd)return 'الكتابة بالذكاء الاصطناعي متوقفة مؤقتًا لضغط الاستخدام الشهر ده. كلم إدارة تنمويين مصر';
+  if(q.capM>0&&q.monthUsd>=q.capM)return 'جمعيتكم وصلت للحد الشهري للكتابة بالذكاء الاصطناعي. تقدروا تكملوا تعديل المقترحات بإيديكم، أو تكلموا الإدارة لزيادة الحد';
+  if(q.capD>0&&q.dayUsd>=q.capD)return 'جمعيتكم وصلت لحد النهارده للكتابة بالذكاء الاصطناعي. الحد بيتجدد بكرة، وتقدروا تكملوا تعديل المقترح بإيديكم';
+  return null}
 async function logUsage(orgId,tier,model,usage){
-  const mon=new Date().toISOString().slice(0,7);const inc=FieldValue.increment;
-  const i=(usage&&usage.input_tokens)||0,o=(usage&&usage.output_tokens)||0;
-  await db.doc(`fp_usage/${orgId}_${mon}`).set({orgId,month:mon,calls:inc(1),inTok:inc(i),outTok:inc(o),
-    by:{[tier]:{calls:inc(1),in:inc(i),out:inc(o)}},model:{[tier]:model},
-    last:FieldValue.serverTimestamp()},{merge:true}).catch(e=>console.error('usage',e));
+  const cfg=await aiCfg(),day=cairoDay(),mon=day.slice(0,7);const inc=FieldValue.increment;
+  const i=(usage&&usage.input_tokens)||0,o=(usage&&usage.output_tokens)||0,usd=usdOf(cfg,tier,i,o);
+  await Promise.all([
+    db.doc(`fp_usage/${orgId}_${mon}`).set({orgId,month:mon,calls:inc(1),inTok:inc(i),outTok:inc(o),usd:inc(usd),
+      by:{[tier]:{calls:inc(1),in:inc(i),out:inc(o),usd:inc(usd)}},days:{[day]:{calls:inc(1),usd:inc(usd)}},model:{[tier]:model},
+      last:FieldValue.serverTimestamp()},{merge:true}),
+    db.doc(`fp_usage/_total_${mon}`).set({orgId:'_total',month:mon,calls:inc(1),usd:inc(usd),days:{[day]:{calls:inc(1),usd:inc(usd)}},last:FieldValue.serverTimestamp()},{merge:true})
+  ]).catch(e=>console.error('usage',e));
 }
 
 // بيكلم Claude بالـ streaming وبيبعت كل جزء نص لـ onDelta
@@ -69,6 +95,7 @@ exports.fpai=onRequest({secrets:[KEY],region:'us-central1',cors:ORIGINS.concat(p
   const {mode,prompt}=req.body||{};const tier=['full','std','quick'].includes(req.body&&req.body.tier)?req.body.tier:'std';
   if(typeof prompt!=='string'||!prompt.trim())return bad(res,400,'الطلب فاضي');
   if(prompt.length>MAX_PROMPT)return bad(res,413,'النص طويل جدًا. قلل حجم المستندات المرفوعة');
+  try{const capMsg=await checkCap(me);if(capMsg)return bad(res,429,capMsg)}catch(e){console.error('cap',e)}
   const model=MODELS[tier],ctl=new AbortController();res.on('close',()=>{if(!res.writableEnded)ctl.abort()});
   if(mode==='json'){
     try{const out=await claude({model,maxTok:MAXTOK[tier],system:JSON_SYS,prompt,signal:ctl.signal});await logUsage(me.orgId,tier,model,out.usage);
@@ -102,6 +129,11 @@ exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.F
       const out=[];for(const id of ids){const [o,m]=await Promise.all([db.doc('orgs/'+id).get(),db.doc('orgs/'+id+'/members/'+t.uid).get()]);if(!o.exists||!m.exists)continue;
         const od=o.data(),md=m.data();out.push({orgId:id,name:od.name||'',role:md.role,status:md.status,orgActive:orgOk(od)})}
       return res.json({current:ud.orgId||'',orgs:out})}
+    if(action==='quota'){
+      const u=await db.doc('users/'+t.uid).get();const orgId=(u.data()||{}).orgId;if(!orgId&&!isAdm)return bad(res,404,'مش مربوط بجمعية');
+      const oid=isAdm&&b.orgId?String(b.orgId):orgId;const o=await db.doc('orgs/'+oid).get();
+      const q=await quota({orgId:oid,org:o.data()||{}});
+      return res.json({monthUsd:q.monthUsd,dayUsd:q.dayUsd,capM:q.capM,capD:q.capD,unlimited:q.unlimited,enabled:q.cfg.enabled})}
     if(action==='switch'){
       const orgId=String(b.orgId||'');const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();
       if(!m.exists||m.data().status!=='active')return bad(res,403,'إنت مش عضو نشط في الجمعية دي');
