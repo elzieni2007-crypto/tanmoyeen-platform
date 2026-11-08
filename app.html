@@ -395,6 +395,7 @@ const CFG={apiKey:"AIzaSyCk98_i0ozMuQumsO4PUDpXGRga5aWI4C8",authDomain:"tanmoyee
   storageBucket:"tanmoyeen-masr26.firebasestorage.app",messagingSenderId:"335780209700",appId:"1:335780209700:web:c2839bb31364b5b18664b1"};
 const AI_URL=(window.TM_EMU&&TM_EMU.ai)||'https://us-central1-tanmoyeen-masr26.cloudfunctions.net/fpai';
 const PORTAL='index.html';
+const ADMIN_EMAIL='elzieni2007@gmail.com';
 firebase.initializeApp(CFG);
 const auth=firebase.auth(),fs=firebase.firestore();auth.languageCode='ar';
 if(window.TM_EMU){auth.useEmulator(TM_EMU.auth);fs.useEmulator('127.0.0.1',TM_EMU.fs)}
@@ -411,7 +412,14 @@ const snap=(id,data,pending)=>({id,exists:data!==undefined,data:()=>data===undef
 let ORG=null,ME=null,ROLE='',ORGID='';
 const ready=new Promise((res,rej)=>{auth.onAuthStateChanged(async u=>{
   if(!u){location.replace(PORTAL);return}
-  try{const us=await fs.doc('users/'+u.uid).get();ORGID=us.exists?us.data().orgId:'';
+  try{
+    // وضع الدعم الفني: الأدمن يفتح حساب أي جمعية من app.html?org=<id> ويشتغل فيه كأنه مدير الحساب
+    const SUP=new URLSearchParams(location.search).get('org');
+    if(SUP&&u.email===ADMIN_EMAIL){ORGID=SUP;const o=await fs.doc('orgs/'+ORGID).get();if(!o.exists)throw new Error('noorg');
+      ORG=o.data()||{};ME={name:'الدعم الفني – تنمويين مصر',role:'owner',status:'active'};ROLE='owner';window.FP.support=true;
+      fs.collection('orgs/'+ORGID+'/log').add({action:'support_open',by:u.email,at:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+      res();return}
+    const us=await fs.doc('users/'+u.uid).get();ORGID=us.exists?us.data().orgId:'';
     if(!ORGID)throw new Error('noorg');
     const [o,m]=await Promise.all([fs.doc('orgs/'+ORGID).get(),fs.doc('orgs/'+ORGID+'/members/'+u.uid).get()]);
     ORG=o.data()||{};ME=m.data()||{};ROLE=ME.role||'';
@@ -2346,5 +2354,11 @@ boot();
   document.getElementById('fpOut').onclick=async()=>{await FP.auth.signOut();location.replace('index.html')};
   const st=document.createElement('style');st.textContent='.fp-acct{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;font-size:12.5px}.fp-acct a{color:var(--accent);font-weight:600;text-decoration:none}.fp-acct button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 10px;font:inherit;color:var(--muted);cursor:pointer}';
   document.head.appendChild(st)})();
+
+// شريط وضع الدعم الفني
+FP.ready.then(()=>{if(!FP.support)return;const o=FP.org()||{};const bar=document.createElement('div');
+  bar.style.cssText='position:sticky;top:0;z-index:9999;background:#7c3aed;color:#fff;font:700 13px Cairo,sans-serif;padding:8px 14px;text-align:center';
+  bar.textContent='🛠 وضع الدعم الفني: إنت شغال جوه حساب «'+(o.name||'')+'». أي تعديل هنا بيتحفظ عند الجمعية.';document.body.prepend(bar);
+  const a=document.querySelector('.fp-acct a');if(a){a.textContent='↩ رجوع للوحة الأدمن';a.href='https://elzieni2007-crypto.github.io/tanmoyeen-masr/'}});
 
 </script>
