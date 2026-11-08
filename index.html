@@ -60,7 +60,7 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
 <!-- لوحة الجمعية -->
 <div id="v-dash" class="wrap wide hide">
   <div class="top">
-    <div class="brand" style="margin:0;justify-content:flex-start"><img src="tanmoyeen_icon_1024.png" alt=""><div><b id="d-name"></b><small><span id="d-me"></span> · منصة الفرص</small></div></div>
+    <div class="brand" style="margin:0;justify-content:flex-start"><img src="tanmoyeen_icon_1024.png" alt=""><div><b id="d-name"></b><small><span id="d-me"></span> · منصة الفرص</small><div id="d-switch"></div></div></div>
     <div class="row" style="gap:6px"><button class="btn ghost" id="b-chmail" style="margin:0;padding:8px 12px;font-size:13px">تغيير الإيميل</button><button class="btn ghost" id="b-chpass" style="margin:0;padding:8px 12px;font-size:13px">تغيير كلمة المرور</button><button class="btn ghost" data-out style="margin:0;padding:8px 12px;font-size:13px">خروج</button></div>
   </div>
   <div class="card">
@@ -110,6 +110,9 @@ firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),db=firebase.firestore();auth.languageCode='ar';
 if(window.TM_EMU){auth.useEmulator(TM_EMU.auth);db.useEmulator('127.0.0.1',TM_EMU.fs)}
 const PORTAL=location.origin+location.pathname;
+const TEAM_URL=(window.TM_EMU&&TM_EMU.team)||'https://us-central1-tanmoyeen-masr26.cloudfunctions.net/fpteam';
+async function team(body){const tok=await auth.currentUser.getIdToken();const r=await fetch(TEAM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify(body)});
+  let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('حصلت مشكلة ('+r.status+')'));return j}
 const $=id=>document.getElementById(id);
 const show=v=>['v-load','v-login','v-state','v-dash'].forEach(x=>$(x).classList.toggle('hide',x!==v));
 const msg=(id,t,ok)=>{const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=t};
@@ -182,18 +185,13 @@ function secAuth(){const app=firebase.apps.find(a=>a.name==='tmTeam')||firebase.
 $('f-add').onsubmit=async e=>{e.preventDefault();const b=$('b-add'),email=$('a-email').value.trim().toLowerCase(),name=$('a-name').value.trim(),role=$('a-role').value;
   if(activeCount()>=seats()){msg('m-team','وصلت للحد الأقصى للمستخدمين');return}
   if(MEMS.some(m=>m.email===email)){msg('m-team','الإيميل ده موجود في الفريق بالفعل');return}
-  b.disabled=true;b.textContent='⏳ جاري الإضافة…';const sa=secAuth();
-  try{const pw=Array.from(crypto.getRandomValues(new Uint8Array(24)),x=>('0'+x.toString(16)).slice(-2)).join('')+'Aa1!';
-    let uid;try{uid=(await sa.createUserWithEmailAndPassword(email,pw)).user.uid}
-    catch(x){throw new Error(x.code==='auth/email-already-in-use'?'الإيميل ده عليه حساب على المنصة بالفعل (ممكن يكون تبع جمعية تانية). استخدم إيميل تاني أو كلمنا.':x.code==='auth/invalid-email'?'الإيميل مكتوب غلط':em(x))}
-    const now=firebase.firestore.FieldValue.serverTimestamp(),by=auth.currentUser.email,bt=db.batch();
-    bt.set(db.collection('orgs').doc(ORGID).collection('members').doc(uid),{email,name,role,status:'active',addedAt:now,addedBy:by});
-    bt.set(db.collection('users').doc(uid),{orgId:ORGID,addedAt:now,addedBy:by});
-    await bt.commit();
-    await sa.sendPasswordResetEmail(email,{url:PORTAL});
-    $('f-add').reset();$('f-add').classList.add('hide');msg('m-team','✅ اتضاف '+name+' كـ'+ROLE[role]+'، وهيوصله إيميل يحط منه كلمة المرور.',true);await loadTeam()}
+  b.disabled=true;b.textContent='⏳ جاري الإضافة…';
+  try{const r=await team({action:'add',orgId:ORGID,email,name,role});
+    if(!r.existed)await auth.sendPasswordResetEmail(email,{url:PORTAL});
+    $('f-add').reset();$('f-add').classList.add('hide');
+    msg('m-team',r.existed?'✅ اتضاف '+name+' كـ'+ROLE[role]+'. الإيميل ده عليه حساب على تنمويين مصر بالفعل، فهيدخل المنصة بنفس كلمة المرور بتاعته.':'✅ اتضاف '+name+' كـ'+ROLE[role]+'، وهيوصله إيميل يحط منه كلمة المرور.',true);await loadTeam()}
   catch(x){msg('m-team',x.message||em(x))}
-  finally{try{await sa.signOut()}catch(_){}b.disabled=false;b.textContent='إضافة وإرسال رابط كلمة المرور'}};
+  finally{b.disabled=false;b.textContent='إضافة وإرسال رابط كلمة المرور'}};
 
 auth.onAuthStateChanged(async u=>{
   if(!u){show('v-login');return}
@@ -202,7 +200,14 @@ auth.onAuthStateChanged(async u=>{
   // أول دخول بعد إنشاء الحساب مباشرة: ممكن مستند الربط يتأخر ثواني، فنعيد المحاولة قبل ما نقول إن الحساب مش مربوط
   for(let i=0;i<3&&!us.exists;i++){await new Promise(r=>setTimeout(r,1500));try{await u.getIdToken(true);us=await db.collection('users').doc(u.uid).get({source:'server'})}catch(e){}}
   if(!us.exists){ORG=null;blocked('🔒','الإيميل ده مش مربوط بحساب جمعية','لو جمعيتك مشتركة، اطلب من مدير الحساب يضيفك، أو تواصل معانا.');return}
-  ORGID=us.data().orgId;
+  const UD=us.data()||{};ORGID=UD.orgId||'';const MANY=[...new Set([...(UD.orgs||[]),...(ORGID?[ORGID]:[])])];
+  if(!MANY.length){ORG=null;blocked('🔒','الإيميل ده مش مربوط بحساب جمعية','لو جمعيتك مشتركة، اطلب من مدير الحساب يضيفك، أو تواصل معانا.');return}
+  // الشخص ممكن يبقى في أكتر من جمعية: لو الجمعية المفتوحة مش متاحة له، نفتح أول جمعية نشطة
+  let LIST=null;
+  if(MANY.length>1||!ORGID){try{LIST=(await team({action:'mine'})).orgs}catch(e){LIST=null}}
+  if(LIST){const cur=LIST.find(x=>x.orgId===ORGID);if(!cur||cur.status!=='active'||!cur.orgActive){const alt=LIST.find(x=>x.status==='active'&&x.orgActive)||LIST.find(x=>x.status==='active');
+    if(alt&&alt.orgId!==ORGID){try{await team({action:'switch',orgId:alt.orgId});ORGID=alt.orgId}catch(e){}}}}
+  window._FPLIST=LIST;
   try{ms=await db.collection('orgs').doc(ORGID).collection('members').doc(u.uid).get()}catch(e){ms=null}
   if(!ms||!ms.exists||ms.data().status!=='active'){ORG=null;blocked('⏸','حسابك في فريق الجمعية متوقف','كلّم مدير حساب جمعيتك علشان يشغله تاني.');return}
   ME={...ms.data(),uid:u.uid};
@@ -214,7 +219,10 @@ auth.onAuthStateChanged(async u=>{
   if(o.status!=='active'){blocked('⏸','الحساب متوقف مؤقتًا','حساب «'+(o.name||'')+'» متوقف حاليًا. تواصل معانا علشان نرجّع تشغيله.');return}
   if(!until||until<new Date()){blocked('⏳','الاشتراك انتهى',(until?'اشتراك «'+(o.name||'')+'» انتهى يوم '+fmt(until)+'. ':'')+'جدد الاشتراك وهنفعّل الحساب تاني على طول.');return}
   const days=Math.ceil((until-new Date())/864e5);
-  $('d-name').textContent=o.name||u.email;$('d-me').textContent=(ME.name||u.email)+' · '+ROLE[ME.role];$('d-until').textContent=fmt(until);
+  $('d-name').textContent=o.name||u.email;
+  {const L=(window._FPLIST||[]).filter(x=>x.status==='active');const box=$('d-switch');
+   if(box){if(L.length>1){box.innerHTML='<select id="d-org" aria-label="اختار الجمعية" style="margin-top:4px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12.5px;background:#fff">'+L.map(x=>'<option value="'+x.orgId+'"'+(x.orgId===ORGID?' selected':'')+'>'+x.name.replace(/[<>&"]/g,'')+(x.orgActive?'':' (متوقف)')+'</option>').join('')+'</select>';
+     $('d-org').onchange=async ev=>{ev.target.disabled=true;try{await team({action:'switch',orgId:ev.target.value});location.reload()}catch(x){alert(x.message);ev.target.disabled=false}}}else box.innerHTML=''}}$('d-me').textContent=(ME.name||u.email)+' · '+ROLE[ME.role];$('d-until').textContent=fmt(until);
   $('l-nmail').textContent=ME.role==='owner'?'الإيميل الجديد (هيبقى الإيميل الرسمي للجمعية)':'إيميلك الجديد';
   const p=$('d-pill');if(days<=7){p.textContent='الاشتراك قرب يخلص';p.style.cssText='color:#a86300;background:#fdf0d7'}else{p.textContent='الحساب نشط';p.style.cssText='color:#0f8a5f;background:#e0f4ec'}
   $('d-left').textContent='باقي '+days+' يوم';document.title=(o.name||'')+' | منصة الفرص';show('v-dash');
