@@ -13,10 +13,18 @@
 .wrap{max-width:440px;margin:0 auto;padding:28px 16px 60px}.wide{max-width:900px}
 .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px}.brand img{width:44px;height:44px;border-radius:12px}
 .brand b{font-size:18px;color:var(--pri)}.brand small{display:block;color:var(--mut);font-size:12px}
+/* خلفية شاشة الدخول: شبكة الفرص */
+body:has(#v-login:not(.hide))::before{content:'';position:fixed;inset:0 0 auto 0;height:min(46vh,380px);z-index:-1;border-radius:0 0 36px 36px;
+background:radial-gradient(240px 110px at 50% 92px,rgba(24,56,104,.97) 35%,rgba(24,56,104,0) 100%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Cg stroke='%23ffffff' stroke-opacity='.16' stroke-width='1.2' fill='none'%3E%3Cpath d='M20 40L95 85L170 30L250 90L330 45M95 85L120 170L210 150L250 90M120 170L40 200M210 150L300 200L330 120L250 90'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='40' r='3' fill-opacity='.35'/%3E%3Ccircle cx='95' cy='85' r='4.5' fill-opacity='.5'/%3E%3Ccircle cx='170' cy='30' r='3' fill-opacity='.35'/%3E%3Ccircle cx='250' cy='90' r='5' fill='%233ccf91' fill-opacity='.8'/%3E%3Ccircle cx='330' cy='45' r='3' fill-opacity='.35'/%3E%3Ccircle cx='120' cy='170' r='3.5' fill-opacity='.4'/%3E%3Ccircle cx='210' cy='150' r='4' fill-opacity='.45'/%3E%3Ccircle cx='40' cy='200' r='3' fill-opacity='.3'/%3E%3Ccircle cx='300' cy='200' r='3' fill-opacity='.3'/%3E%3Ccircle cx='330' cy='120' r='3.5' fill='%235aa9ff' fill-opacity='.7'/%3E%3C/g%3E%3C/svg%3E") 0 0/360px 240px,linear-gradient(135deg,#0f2a52 0%,#1a3a6e 55%,#13608a 100%)}
+#v-login{padding-top:40px}#v-login .brand b{color:#fff}#v-login .card{border:0;box-shadow:0 18px 40px rgba(15,42,82,.18)}
+.brand img.wl{width:auto;height:54px;padding:6px 12px;background:#fff;border-radius:14px;box-shadow:0 4px 14px rgba(17,36,58,.12)}.brand:has(img.wl) small{display:none}
+
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 24px rgba(17,36,58,.06)}
 h1{font-size:20px;margin:0 0 6px}p{margin:0 0 14px;color:var(--mut);font-size:14px;line-height:1.7}
 label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
 input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:inherit;font-size:15px;background:#fff}input:focus{outline:2px solid #bcd3f2;border-color:var(--pri)}
+.pw{position:relative;display:block}.pw input{padding-left:48px}.pw .eye{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;background:none;border-radius:10px;cursor:pointer;color:#5b6b7c;display:flex;align-items:center;justify-content:center;padding:0}.pw .eye:hover{background:#eef4fb}.pw .eye:focus-visible{outline:2px solid #bcd3f2}.pw .eye svg{width:22px;height:22px}
+
 .btn{display:block;width:100%;margin-top:16px;padding:12px;border:0;border-radius:12px;background:var(--pri);color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer}
 .btn:disabled{opacity:.6}.btn.ghost{background:#eef3ff;color:var(--pri);white-space:nowrap}.link{background:none;border:0;color:var(--pri);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-top:12px;font-size:13px}
 .msg{margin-top:12px;font-size:13.5px;border-radius:10px;padding:10px;display:none;line-height:1.7}.msg.err{display:block;background:#fbe6e6;color:var(--red)}.msg.ok{display:block;background:#e0f4ec;color:var(--acc)}
@@ -35,7 +43,7 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
 
 <!-- تسجيل الدخول -->
 <div id="v-login" class="wrap hide">
-  <div class="brand"><img src="tanmoyeen_icon_1024.png" alt=""><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
+  <div class="brand"><img class="wl" src="tanmoyeen_logo_wide.png" alt="تنمويين مصر"><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
   <div class="card">
     <h1>دخول الجمعية</h1>
     <p>ادخل بالإيميل اللي سجلت بيه الجمعية. أول مرة؟ هتلاقي في إيميلك رسالة فيها رابط تحط منه كلمة المرور.</p>
@@ -52,7 +60,7 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
 
 <!-- حالة الحساب (مش متاح) -->
 <div id="v-state" class="wrap hide">
-  <div class="brand"><img src="tanmoyeen_icon_1024.png" alt=""><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
+  <div class="brand"><img class="wl" src="tanmoyeen_logo_wide.png" alt="تنمويين مصر"><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
   <div class="card state"><div class="ic" id="s-ic"></div><h1 id="s-t"></h1><p id="s-p"></p>
     <div class="row"><button class="btn" id="s-req" style="background:#1f9d55">ابعت طلب للإدارة</button><button class="btn ghost" data-out>تسجيل خروج</button></div><div class="msg" id="m-state"></div></div>
 </div>
@@ -227,6 +235,21 @@ auth.onAuthStateChanged(async u=>{
   const p=$('d-pill');if(days<=7){p.textContent='الاشتراك قرب يخلص';p.style.cssText='color:#a86300;background:#fdf0d7'}else{p.textContent='الحساب نشط';p.style.cssText='color:#0f8a5f;background:#e0f4ec'}
   $('d-left').textContent='باقي '+days+' يوم';document.title=(o.name||'')+' | منصة الفرص';show('v-dash');
   loadTeam().catch(e=>msg('m-team',em(e)))});
+
+// إظهار وإخفاء كلمة المرور
+(function(){
+  var ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19C5.5 19 2 12 2 12a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(function(inp){
+    var w=document.createElement('span');w.className='pw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    var b=document.createElement('button');b.type='button';b.className='eye';w.appendChild(b);
+    function set(show){inp.type=show?'text':'password';b.innerHTML=show?OFF:ON;b.setAttribute('aria-label',show?'إخفاء كلمة المرور':'إظهار كلمة المرور');b.title=b.getAttribute('aria-label');b.setAttribute('aria-pressed',show)}
+    set(false);
+    b.addEventListener('click',function(){set(inp.type==='password');inp.focus()});
+    // ترجع مخفية بعد الدخول أو لما الفورم يتبعت
+    if(inp.form)inp.form.addEventListener('submit',function(){set(false)});
+  });
+})();
 </script>
 </body>
 </html>
