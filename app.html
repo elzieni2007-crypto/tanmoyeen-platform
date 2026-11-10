@@ -2445,7 +2445,7 @@ boot();
 // رابط الرجوع لصفحة الحساب والفريق + تسجيل الخروج، تحت اسم المستخدم في الشريط الجانبي
 (function(){const me=document.querySelector('.rail .me');if(!me)return;
   const box=document.createElement('div');box.className='fp-acct';
-  box.innerHTML='<a href="index.html">👥 الحساب والفريق</a><button type="button" id="fpOut">خروج</button>';
+  box.innerHTML='<a href="index.html">👥 الحساب والفريق</a><a href="guide.html" target="_blank" rel="noopener">📘 الدليل</a><button type="button" id="fpOut">خروج</button>';
   me.insertAdjacentElement('afterend',box);
   document.getElementById('fpOut').onclick=async()=>{await FP.auth.signOut();location.replace('index.html')};
   const st=document.createElement('style');st.textContent='.fp-acct{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;font-size:12.5px}.fp-acct a{color:var(--accent);font-weight:600;text-decoration:none}.fp-acct button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:3px 10px;font:inherit;color:var(--muted);cursor:pointer}';
