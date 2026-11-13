@@ -195,6 +195,10 @@ exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.F
       const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();if(!m.exists)return res.json({ok:false});
       const o=await db.doc('orgs/'+orgId).get();if(!isTrial(o.data()))return res.json({ok:false});
       await markHot(orgId,b.feature,b.opp,t.email);return res.json({ok:true})}
+    if(action==='resetlink'){// للأدمن بس: رابط تعيين كلمة المرور علشان يتبعت للجمعية على واتساب لو الإيميل ما وصلش
+      if(!isAdm)return bad(res,403,'للأدمن بس');const email=String(b.email||'').trim().toLowerCase();if(!email)return bad(res,400,'الإيميل ناقص');
+      try{let link=await admin.auth().generatePasswordResetLink(email,{url:'https://elzieni2007-crypto.github.io/tanmoyeen-platform/'});link=/[?&]lang=/.test(link)?link.replace(/([?&])lang=[^&]*/,'$1lang=ar'):link+'&lang=ar';return res.json({link})}
+      catch(e){if(e.code==='auth/user-not-found'||e.code==='auth/email-not-found')return bad(res,404,'مفيش حساب بالإيميل ده');throw e}}
     if(action==='quote'){// الجمعية التجريبية تطلب عرض السعر: نفتحلها العرض اللي اتجهزلها، ولو مفيش نجهزه من العرض الافتراضي
       const u=await db.doc('users/'+t.uid).get();const orgId=(u.data()||{}).orgId;if(!orgId)return bad(res,404,'الحساب ده مش مربوط بجمعية');
       const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();if(!m.exists)return bad(res,403,'إنت مش عضو في الجمعية دي');
