@@ -33,7 +33,8 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
 .mod{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.mod b{display:block;margin-bottom:4px}.mod span{font-size:13px;color:var(--mut)}
 .soon{float:left;font-size:11px;background:#fdf0d7;color:var(--amb);border-radius:999px;padding:1px 8px;font-weight:700}
-.guide{display:flex;align-items:center;gap:12px;margin-top:14px;background:#fff;border:1.5px solid #cfe0f3;border-radius:14px;padding:12px 14px;text-decoration:none;color:var(--ink);box-shadow:0 4px 14px rgba(17,36,58,.06)}.guide:hover{border-color:var(--pri)}.guide .gi{font-size:24px;width:42px;height:42px;border-radius:12px;background:#eaf2fd;display:flex;align-items:center;justify-content:center;flex-shrink:0}.guide b{display:block;font-size:14px;color:var(--pri)}.guide small{display:block;font-size:12px;color:var(--mut);line-height:1.6}.guide .ga{margin-right:auto;color:var(--pri);font-weight:800}
+.guide{display:flex;align-items:center;gap:12px;margin-top:14px;background:#fff;border:1.5px solid #cfe0f3;border-radius:14px;padding:12px 14px;text-decoration:none;color:var(--ink);box-shadow:0 4px 14px rgba(17,36,58,.06)}.guide:hover{border-color:var(--pri)}.guide .gi{font-size:24px;width:42px;height:42px;border-radius:12px;background:#eaf2fd;display:flex;align-items:center;justify-content:center;flex-shrink:0}.guide b{display:block;font-size:14px;color:var(--pri)}.guide small{display:block;font-size:12px;color:var(--mut);line-height:1.6}.guide .ga{margin-right:auto;color:var(--pri);font-weight:800}.guide.trialcta{border-color:#f1d98e;background:#fffaf0}.guide.trialcta .gi{background:#fff1c7}
+.trialbox{margin-top:12px;background:#fffaf0;border:1.5px solid #f1d98e;border-radius:16px;padding:16px}.trialbox b{color:#6b4a00}.trialbox p{font-size:13.5px;color:#6b5a2e;line-height:1.8;margin:6px 0 10px}
 .state{text-align:center}.state .ic{font-size:42px;margin-bottom:6px}
 .row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{width:auto;flex:1;margin-top:10px}
 .hide{display:none!important}
@@ -57,7 +58,8 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
     <div class="msg" id="m-login"></div>
   </div>
   <a class="guide" href="guide.html"><span class="gi">📘</span><span><b>دليل استخدام المنصة بالصور</b><small>إزاي تدخل، وتضيف فريقك، وتكتب أول مقترح خطوة بخطوة</small></span><span class="ga">←</span></a>
-  <p style="text-align:center;margin-top:16px;font-size:13px">لسه الجمعية مش مشتركة؟ <a href="https://elzieni2007-crypto.github.io/tanmoyeen-masr/?form=funding" style="color:var(--pri);font-weight:700">سجّل اهتمامك من هنا</a></p>
+  <a class="guide trialcta" href="trial.html"><span class="gi">🧪</span><span><b>جمعيتك حجزت ولسه مش مشتركة؟ جرّب المنصة مجانًا</b><small>فعّل حساب تجريبي بنفسك في دقيقة، بالموبايل ورقم الإشهار اللي حجزت بيهم</small></span><span class="ga">←</span></a>
+  <p style="text-align:center;margin-top:16px;font-size:13px">لسه ما حجزتش؟ <a href="https://elzieni2007-crypto.github.io/tanmoyeen-masr/?form=funding" style="color:var(--pri);font-weight:700">سجّل بيانات جمعيتك من هنا</a></p>
 </div>
 
 <!-- حالة الحساب (مش متاح) -->
@@ -75,7 +77,7 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <div><span class="pill" id="d-pill"></span><div style="margin-top:6px;font-size:14px">الاشتراك ساري حتى <b id="d-until"></b></div></div>
+      <div><span class="pill" id="d-pill"></span><div style="margin-top:6px;font-size:14px"><span id="d-ulbl">الاشتراك ساري حتى</span> <b id="d-until"></b></div></div>
       <div style="font-size:13px;color:var(--mut)" id="d-left"></div>
     </div>
     <form id="f-mail" class="hide" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:6px">
@@ -89,6 +91,9 @@ input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:i
     <div><b style="font-size:17px;color:var(--pri)">🚀 ادخل منصة الفرص</b><div style="font-size:13.5px;color:var(--mut);margin-top:4px">الفرص المناسبة لجمعيتكم، تحليلها، دليل الممولين، وكتابة المقترح والموازنة</div></div>
     <span style="font-size:22px;color:var(--pri)">←</span>
   </a>
+  <div class="trialbox hide" id="d-trial"><b>🧪 ده حساب تجريبي</b>
+    <p>مفتوح ليكم: الفرص المناسبة لجمعيتكم ونسبة التوافق، تحليل الدعوات و Go / No-Go، دليل الممولين، الملف التعريفي، وأفكار للمقترح.<br>كتابة المقترح كامل والموازنة والترجمة وإيميل التقديم للجمعيات المشتركة، وبياناتكم هتفضل محفوظة لما تشتركوا.</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" type="button" id="d-quote" style="display:inline-block;width:auto;margin:0;padding:10px 18px;background:#1f9d55;white-space:nowrap">📄 اعرض عرض السعر</button><a class="btn ghost hide" id="d-sub" target="_blank" rel="noopener" style="display:inline-block;width:auto;margin:0;padding:10px 18px;text-decoration:none">💬 عندي سؤال (واتساب)</a></div><div class="msg" id="m-quote"></div></div>
   <div class="card" id="team" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b style="font-size:16px">👥 فريق الجمعية</b><span class="pill" id="t-seats" style="background:#eef3ff;color:var(--pri)"></span></div>
     <div id="t-list" style="margin-top:8px"></div>
@@ -158,7 +163,14 @@ const ROLE={owner:'مدير الحساب',editor:'مُعِد',reviewer:'مراج
 const ROLEH={owner:'تضيف الزملاء وتدير الفريق وتعدّل كل حاجة',editor:'تكتب وتعدّل الملف التعريفي والمقترحات والموازنة',reviewer:'تقرا وتكتب ملاحظات من غير ما تعدّل'};
 function blocked(ic,t,p){$('s-ic').textContent=ic;$('s-t').textContent=t;$('s-p').textContent=p;$('m-state').className='msg';const b=$('s-req');b.disabled=false;b.textContent='ابعت طلب للإدارة';show('v-state')}
 // الطلب بيوصل لصندوق «رسائل التواصل» في لوحة الأدمن
-$('s-req').onclick=async()=>{const b=$('s-req'),u=auth.currentUser;b.disabled=true;
+// عرض السعر للحساب التجريبي: نفس صفحة العرض اللي الأدمن بيبعتها، والجمعية توافق منها
+async function openQuote(btn,box){const w=window.open('about:blank','_blank');btn.disabled=true;const t=btn.textContent;btn.textContent='⏳ بنجهز العرض…';
+  try{const r=await team({action:'quote'});
+    if(r.url){if(w&&!w.closed)w.location.href=r.url;const m=$(box);m.innerHTML='✅ اتفتح عرض السعر'+(r.no?' رقم <span dir="ltr">'+esc(r.no)+'</span>':'')+' في صفحة جديدة. لو ماظهرش <a href="'+esc(r.url)+'" target="_blank" rel="noopener" style="font-weight:700;color:var(--pri)">افتحه من هنا</a>. ومن نفس الصفحة توافقوا أو تبعتوا استفسار.';m.className='msg ok'}
+    else{if(w)w.close();msg(box,'✅ وصلنا طلبك، وهنبعتلكم عرض السعر على الإيميل أو واتساب خلال يوم عمل',true)}}
+  catch(x){if(w)w.close();msg(box,em(x))}finally{btn.disabled=false;btn.textContent=t}}
+$('d-quote').onclick=()=>openQuote($('d-quote'),'m-quote');
+$('s-req').onclick=async()=>{const b=$('s-req'),u=auth.currentUser;if(ORG&&ORG.plan==='trial'){openQuote(b,'m-state');return}b.disabled=true;
   try{await db.collection('contact_messages').add({name:(ORG&&ORG.name)||u.email,info:u.email,type:'منصة الفرص: حساب جمعية',
       msg:$('s-t').textContent+' — '+$('s-p').textContent,timestamp:firebase.firestore.FieldValue.serverTimestamp(),status:'unread'});
     b.textContent='✅ اتبعت';msg('m-state','وصلنا طلبك وهنتواصل معاك على الإيميل أو الموبايل المسجل.',true)}
@@ -179,8 +191,9 @@ function renderTeam(){const own=ME.role==='owner',full=activeCount()>=seats();
       ${own&&!me?`<select data-role="${m.uid}" style="padding:8px;border:1px solid #d3dee8;border-radius:10px;font:inherit"><option value="editor"${m.role==='editor'?' selected':''}>مُعِد</option><option value="reviewer"${m.role==='reviewer'?' selected':''}>مراجع</option></select>
         <button class="btn ghost" data-tog="${m.uid}" style="width:auto;margin:0;padding:8px 12px;font-size:13px">${m.status==='active'?'⏸ إيقاف':'▶ تشغيل'}</button>
         <button class="btn ghost" data-rst="${esc(m.email)}" style="width:auto;margin:0;padding:8px 12px;font-size:13px">🔑 رابط كلمة المرور</button>`:''}</div>`}).join('');
-  $('b-addopen').classList.toggle('hide',!own||!$('f-add').classList.contains('hide'));$('b-addopen').disabled=full;
-  $('t-help').textContent=own?(full?'وصلت للحد الأقصى ('+seats()+' مستخدمين). أوقف حد علشان تضيف غيره، أو كلمنا لو محتاج أكتر.':'كل زميل بيدخل بإيميله وكلمة مروره هو. المُعِد يكتب ويعدّل، والمراجع يقرا ويكتب ملاحظات بس.')
+  const tr=ORG&&ORG.plan==='trial';
+  $('b-addopen').classList.toggle('hide',tr||!own||!$('f-add').classList.contains('hide'));$('b-addopen').disabled=full;
+  $('t-help').textContent=tr?'الحساب التجريبي لمستخدم واحد. لما تشتركوا تقدروا تضيفوا زمايلكم.':own?(full?'وصلت للحد الأقصى ('+seats()+' مستخدمين). أوقف حد علشان تضيف غيره، أو كلمنا لو محتاج أكتر.':'كل زميل بيدخل بإيميله وكلمة مروره هو. المُعِد يكتب ويعدّل، والمراجع يقرا ويكتب ملاحظات بس.')
     :'دورك: '+ROLE[ME.role]+': '+ROLEH[ME.role]+'. مدير الحساب هو اللي بيضيف الزملاء.';
   document.querySelectorAll('[data-role]').forEach(x=>x.onchange=()=>updMember(x.dataset.role,{role:x.value},'✅ اتغير الدور'));
   document.querySelectorAll('[data-tog]').forEach(x=>x.onclick=()=>{const m=MEMS.find(y=>y.uid===x.dataset.tog);
@@ -228,6 +241,7 @@ auth.onAuthStateChanged(async u=>{
   const o=ORG=s.data(),until=o.paidUntil&&o.paidUntil.toDate?o.paidUntil.toDate():null;
   if(ME.role==='owner'&&u.email&&o.email!==u.email)db.collection('orgs').doc(ORGID).update({email:u.email}).catch(()=>{});// إيميل الجمعية الرسمي = إيميل مدير الحساب
   if(o.status!=='active'){blocked('⏸','الحساب متوقف مؤقتًا','حساب «'+(o.name||'')+'» متوقف حاليًا. تواصل معانا علشان نرجّع تشغيله.');return}
+  if((!until||until<new Date())&&o.plan==='trial'){blocked('🧪','الفترة التجريبية خلصت','شكرًا إنكم جربتوا المنصة. اشتركوا وكمّلوا من مكانكم: الملف التعريفي والأفكار اللي اشتغلتوا عليها محفوظة.');$('s-req').textContent='📄 اعرض عرض السعر';return}
   if(!until||until<new Date()){blocked('⏳','الاشتراك انتهى',(until?'اشتراك «'+(o.name||'')+'» انتهى يوم '+fmt(until)+'. ':'')+'جدد الاشتراك وهنفعّل الحساب تاني على طول.');return}
   const days=Math.ceil((until-new Date())/864e5);
   $('d-name').textContent=o.name||u.email;
@@ -235,7 +249,10 @@ auth.onAuthStateChanged(async u=>{
    if(box){if(L.length>1){box.innerHTML='<select id="d-org" aria-label="اختار الجمعية" style="margin-top:4px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12.5px;background:#fff">'+L.map(x=>'<option value="'+x.orgId+'"'+(x.orgId===ORGID?' selected':'')+'>'+x.name.replace(/[<>&"]/g,'')+(x.orgActive?'':' (متوقف)')+'</option>').join('')+'</select>';
      $('d-org').onchange=async ev=>{ev.target.disabled=true;try{await team({action:'switch',orgId:ev.target.value});location.reload()}catch(x){alert(x.message);ev.target.disabled=false}}}else box.innerHTML=''}}$('d-me').textContent=(ME.name||u.email)+' · '+ROLE[ME.role];$('d-until').textContent=fmt(until);
   $('l-nmail').textContent=ME.role==='owner'?'الإيميل الجديد (هيبقى الإيميل الرسمي للجمعية)':'إيميلك الجديد';
-  const p=$('d-pill');if(days<=7){p.textContent='الاشتراك قرب يخلص';p.style.cssText='color:#a86300;background:#fdf0d7'}else{p.textContent='الحساب نشط';p.style.cssText='color:#0f8a5f;background:#e0f4ec'}
+  const p=$('d-pill');if(o.plan==='trial'){p.textContent='🧪 حساب تجريبي';p.style.cssText='color:#6b4a00;background:#fff1c7';$('d-ulbl').textContent='التجربة سارية حتى';$('d-trial').classList.remove('hide');
+    db.collection('fp_meta').doc('trial').get().then(d=>{const wa=String(((d.exists&&d.data())||{}).wa||'').replace(/\D/g,'');const a=$('d-sub'),t='السلام عليكم، احنا '+(o.name||'')+' وعايزين نشترك في منصة فرص التمويل.';
+      if(wa){a.href='https://wa.me/'+wa+'?text='+encodeURIComponent(t);a.classList.remove('hide')}}).catch(()=>{})}
+  else if(days<=7){p.textContent='الاشتراك قرب يخلص';p.style.cssText='color:#a86300;background:#fdf0d7'}else{p.textContent='الحساب نشط';p.style.cssText='color:#0f8a5f;background:#e0f4ec'}
   $('d-left').textContent='باقي '+days+' يوم';document.title=(o.name||'')+' | منصة الفرص';show('v-dash');
   loadTeam().catch(e=>msg('m-team',em(e)))});
 

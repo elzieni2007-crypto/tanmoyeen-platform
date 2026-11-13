@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جرّب منصة الفرص مجانًا | تنمويين مصر</title>
+<meta name="description" content="فعّل حساب تجريبي مجاني لجمعيتك على منصة فرص التمويل من تنمويين مصر.">
+<link rel="icon" href="tanmoyeen_icon_1024.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#11243a;--mut:#64758a;--pri:#1a3a6e;--acc:#0f8a5f;--bg:#f4f7fb;--card:#fff;--line:#e2e9f1;--red:#b33a3a;--amb:#a86300}
+*{box-sizing:border-box}body{margin:0;font-family:Cairo,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.wrap{max-width:440px;margin:0 auto;padding:28px 16px 60px}.wide{max-width:900px}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px}.brand img{width:44px;height:44px;border-radius:12px}
+.brand b{font-size:18px;color:var(--pri)}.brand small{display:block;color:var(--mut);font-size:12px}
+/* خلفية شاشة الدخول: شبكة الفرص */
+body::before{content:'';position:fixed;inset:0 0 auto 0;height:min(46vh,380px);z-index:-1;border-radius:0 0 36px 36px;
+background:radial-gradient(240px 110px at 50% 92px,rgba(24,56,104,.97) 35%,rgba(24,56,104,0) 100%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Cg stroke='%23ffffff' stroke-opacity='.16' stroke-width='1.2' fill='none'%3E%3Cpath d='M20 40L95 85L170 30L250 90L330 45M95 85L120 170L210 150L250 90M120 170L40 200M210 150L300 200L330 120L250 90'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='20' cy='40' r='3' fill-opacity='.35'/%3E%3Ccircle cx='95' cy='85' r='4.5' fill-opacity='.5'/%3E%3Ccircle cx='170' cy='30' r='3' fill-opacity='.35'/%3E%3Ccircle cx='250' cy='90' r='5' fill='%233ccf91' fill-opacity='.8'/%3E%3Ccircle cx='330' cy='45' r='3' fill-opacity='.35'/%3E%3Ccircle cx='120' cy='170' r='3.5' fill-opacity='.4'/%3E%3Ccircle cx='210' cy='150' r='4' fill-opacity='.45'/%3E%3Ccircle cx='40' cy='200' r='3' fill-opacity='.3'/%3E%3Ccircle cx='300' cy='200' r='3' fill-opacity='.3'/%3E%3Ccircle cx='330' cy='120' r='3.5' fill='%235aa9ff' fill-opacity='.7'/%3E%3C/g%3E%3C/svg%3E") 0 0/360px 240px,linear-gradient(135deg,#0f2a52 0%,#1a3a6e 55%,#13608a 100%)}
+.wrap{padding-top:40px}.wrap>.brand b{color:#fff}.wrap>.card{border:0;box-shadow:0 18px 40px rgba(15,42,82,.18)}
+.brand img.wl{width:auto;height:54px;padding:6px 12px;background:#fff;border-radius:14px;box-shadow:0 4px 14px rgba(17,36,58,.12)}.brand:has(img.wl) small{display:none}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 24px rgba(17,36,58,.06)}
+h1{font-size:20px;margin:0 0 6px}p{margin:0 0 14px;color:var(--mut);font-size:14px;line-height:1.7}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+input{width:100%;padding:12px;border:1px solid #d3dee8;border-radius:12px;font:inherit;font-size:15px;background:#fff}input:focus{outline:2px solid #bcd3f2;border-color:var(--pri)}
+.pw{position:relative;display:block}.pw input{padding-left:48px}.pw .eye{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;background:none;border-radius:10px;cursor:pointer;color:#5b6b7c;display:flex;align-items:center;justify-content:center;padding:0}.pw .eye:hover{background:#eef4fb}.pw .eye:focus-visible{outline:2px solid #bcd3f2}.pw .eye svg{width:22px;height:22px}
+
+.btn{display:block;width:100%;margin-top:16px;padding:12px;border:0;border-radius:12px;background:var(--pri);color:#fff;font:inherit;font-weight:800;font-size:15px;cursor:pointer}
+.btn:disabled{opacity:.6}.btn.ghost{background:#eef3ff;color:var(--pri);white-space:nowrap}.link{background:none;border:0;color:var(--pri);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-top:12px;font-size:13px}
+.msg{margin-top:12px;font-size:13.5px;border-radius:10px;padding:10px;display:none;line-height:1.7}.msg.err{display:block;background:#fbe6e6;color:var(--red)}.msg.ok{display:block;background:#e0f4ec;color:var(--acc)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.pill{display:inline-block;border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px}
+.mod{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}.mod b{display:block;margin-bottom:4px}.mod span{font-size:13px;color:var(--mut)}
+.soon{float:left;font-size:11px;background:#fdf0d7;color:var(--amb);border-radius:999px;padding:1px 8px;font-weight:700}
+.guide{display:flex;align-items:center;gap:12px;margin-top:14px;background:#fff;border:1.5px solid #cfe0f3;border-radius:14px;padding:12px 14px;text-decoration:none;color:var(--ink);box-shadow:0 4px 14px rgba(17,36,58,.06)}.guide:hover{border-color:var(--pri)}.guide .gi{font-size:24px;width:42px;height:42px;border-radius:12px;background:#eaf2fd;display:flex;align-items:center;justify-content:center;flex-shrink:0}.guide b{display:block;font-size:14px;color:var(--pri)}.guide small{display:block;font-size:12px;color:var(--mut);line-height:1.6}.guide .ga{margin-right:auto;color:var(--pri);font-weight:800}.guide.trialcta{border-color:#f1d98e;background:#fffaf0}.guide.trialcta .gi{background:#fff1c7}
+.trialbox{margin-top:12px;background:#fffaf0;border:1.5px solid #f1d98e;border-radius:16px;padding:16px}.trialbox b{color:#6b4a00}.trialbox p{font-size:13.5px;color:#6b5a2e;line-height:1.8;margin:6px 0 10px}
+.state{text-align:center}.state .ic{font-size:42px;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{width:auto;flex:1;margin-top:10px}
+.hide{display:none!important}
+
+.steps{display:flex;gap:6px;margin:0 0 14px}.steps i{flex:1;height:5px;border-radius:9px;background:#e2e9f1}.steps i.on{background:var(--acc)}
+.incl{list-style:none;padding:0;margin:4px 0 6px;font-size:13.5px;line-height:1.9}.incl li::before{content:"✓ ";color:var(--acc);font-weight:800}.incl li.no::before{content:"🔒 ";}.incl li.no{color:var(--mut)}
+.box{background:#f4f7fb;border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;font-size:14px;line-height:1.8}.box b{color:var(--pri)}
+.hint{font-size:12.5px;color:var(--mut);margin-top:6px;line-height:1.7}.sug{font-size:13px;margin-top:6px;color:var(--amb)}.sug button{background:none;border:0;color:var(--pri);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}
+.wa{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:11px;border-radius:12px;background:#e7f7ee;color:#127a45;font-weight:800;font-size:14px;text-decoration:none}
+.big{font-size:40px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><img class="wl" src="tanmoyeen_logo_wide.png" alt="تنمويين مصر"><div><b>منصة الفرص</b><small>تنمويين مصر</small></div></div>
+
+  <!-- 1: البحث عن الحجز -->
+  <div class="card" id="s1">
+    <div class="steps"><i class="on"></i><i></i><i></i></div>
+    <h1>جرّب منصة فرص التمويل مجانًا</h1>
+    <p id="intro">لو جمعيتك حجزت على المنصة، فعّل حساب تجريبي بنفسك في دقيقة.</p>
+    <ul class="incl">
+      <li>الفرص المناسبة لجمعيتك ونسبة التوافق</li>
+      <li>تحليل الدعوات وقرار Go / No-Go</li>
+      <li>دليل الممولين والملف التعريفي للجمعية</li>
+      <li>أفكار للمقترح على الفرصة اللي تختارها</li>
+      <li class="no">كتابة المقترح كامل والموازنة والترجمة للمشتركين</li>
+    </ul>
+    <form id="f1" novalidate>
+      <label for="phone">رقم الموبايل اللي حجزت بيه</label><input id="phone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" required>
+      <label for="reg">رقم إشهار الجمعية</label><input id="reg" dir="ltr" inputmode="numeric" placeholder="زي ما كتبته في الحجز" required>
+      <button class="btn" id="b1">دوّر على حجز جمعيتي</button>
+    </form>
+    <div class="msg" id="m1"></div>
+    <a class="wa hide" id="wa1" target="_blank" rel="noopener">💬 مش لاقي حجزك؟ كلمنا على واتساب</a>
+    <p style="margin:14px 0 0;font-size:13px;text-align:center">لسه ما حجزتش؟ <a href="https://elzieni2007-crypto.github.io/tanmoyeen-masr/?form=funding" style="color:var(--pri);font-weight:700">سجّل بيانات جمعيتك الأول</a></p>
+  </div>
+
+  <!-- 2: تأكيد الإيميل -->
+  <div class="card hide" id="s2">
+    <div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
+    <h1>أكّد إيميل الدخول</h1>
+    <div class="box">الجمعية: <b id="o-name"></b><br>الإيميل اللي في الحجز: <b dir="ltr" id="o-mail"></b></div>
+    <p>اكتب الإيميل اللي هتدخل بيه المنصة. لو الإيميل اللي في الحجز غلط أو مش بتفتحه، اكتب الصح هنا، وهنعدله.</p>
+    <form id="f2" novalidate>
+      <label for="em">الإيميل</label><input id="em" type="email" dir="ltr" autocomplete="email" required><div class="sug hide" id="sug"></div>
+      <label for="em2">اكتب الإيميل تاني للتأكيد</label><input id="em2" type="email" dir="ltr" autocomplete="off" required>
+      <div class="hint">هيوصلك عليه إيميل من «تنمويين مصر» فيه رابط تحط منه كلمة المرور. الإيميل يتعدل مرة واحدة بس قبل التفعيل.</div>
+      <button class="btn" id="b2" style="background:var(--acc)">فعّل الحساب التجريبي</button>
+    </form>
+    <button class="link" type="button" id="back">رجوع</button>
+    <div class="msg" id="m2"></div>
+    <a class="wa hide" id="wa2" target="_blank" rel="noopener">💬 محتاج مساعدة؟ كلمنا على واتساب</a>
+  </div>
+
+  <!-- 3: تم -->
+  <div class="card hide" id="s3">
+    <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="big" id="d-ic">🎉</div>
+    <h1 id="d-t" style="text-align:center">اتفعّل الحساب التجريبي</h1>
+    <p id="d-p" style="text-align:center"></p>
+    <a class="btn" href="./" style="text-decoration:none;text-align:center">ادخل المنصة</a>
+    <a class="guide" href="guide.html" target="_blank" rel="noopener"><span class="gi">📘</span><span><b>دليل استخدام المنصة بالصور</b><small>ابدأ بالملف التعريفي، وبعدين شوف الفرص المناسبة</small></span><span class="ga">←</span></a>
+    <a class="wa hide" id="wa3" target="_blank" rel="noopener">💬 الإيميل ما وصلش؟ كلمنا على واتساب</a>
+  </div>
+</div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyCk98_i0ozMuQumsO4PUDpXGRga5aWI4C8",authDomain:"tanmoyeen-masr26.firebaseapp.com",projectId:"tanmoyeen-masr26",
+  storageBucket:"tanmoyeen-masr26.firebasestorage.app",messagingSenderId:"335780209700",appId:"1:335780209700:web:c2839bb31364b5b18664b1"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();auth.languageCode='ar';
+if(window.TM_EMU)auth.useEmulator(TM_EMU.auth);
+const URL_T=(window.TM_EMU&&TM_EMU.trial)||'https://us-central1-tanmoyeen-masr26.cloudfunctions.net/fptrial';
+const PORTAL='https://elzieni2007-crypto.github.io/tanmoyeen-platform/';
+const $=id=>document.getElementById(id);
+let WA='',UNTIL='',LK=null;
+const fmt=d=>d?new Date(d+'T12:00:00').toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}):'';
+function msg(id,t,ok){const m=$(id);m.textContent=t;m.className='msg '+(ok?'ok':'err')}
+function clr(id){$(id).className='msg';$(id).textContent=''}
+function wa(id,extra){const a=$(id);if(!WA){a.classList.add('hide');return}
+  const t='السلام عليكم، عايز أفعّل الحساب التجريبي لمنصة الفرص.'+(LK&&LK.orgName?'\nالجمعية: '+LK.orgName:'')+'\nالموبايل اللي حجزت بيه: '+$('phone').value.trim()+'\nرقم الإشهار: '+$('reg').value.trim()+(extra?'\n'+extra:'');
+  a.href='https://wa.me/'+WA+'?text='+encodeURIComponent(t);a.classList.remove('hide')}
+function step(n){['s1','s2','s3'].forEach((x,i)=>$(x).classList.toggle('hide',i!==n-1));window.scrollTo(0,0)}
+async function call(body){const r=await fetch(URL_T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j={};try{j=await r.json()}catch(e){}if(j.wa)WA=j.wa;if(!r.ok)throw Object.assign(new Error(j.error||'حصلت مشكلة، جرب تاني'),{j});return j}
+call({action:'cfg'}).then(c=>{WA=c.wa||'';UNTIL=c.until||'';
+  if(c.open)$('intro').textContent='لو جمعيتك حجزت على المنصة، فعّل حساب تجريبي بنفسك في دقيقة. التجربة مجانية لحد '+fmt(UNTIL)+'.';
+  else{$('intro').textContent='الفترة التجريبية خلصت. لو جمعيتك مشتركة ادخل من صفحة الدخول، ولو عايز تشترك كلمنا على واتساب.';$('b1').disabled=true;wa('wa1')}}).catch(()=>{});
+
+// أخطاء الكتابة الشائعة في الإيميل
+const DOM={'gmail.com':['gmail.co','gmail.con','gmail.cm','gmal.com','gmai.com','gamil.com','gmial.com','gmaill.com','gimail.com','gmail.om','g.mail.com','gmail.comm','gmail.cpm','gmail.coom'],
+  'yahoo.com':['yaho.com','yahoo.co','yahoo.con','yahooo.com','yhoo.com','yahoo.cm'],'hotmail.com':['hotmail.co','hotmail.con','hotmial.com','hotmal.com','hotmil.com','homail.com'],
+  'outlook.com':['outlook.co','outlook.con','outlok.com','outloook.com'],'icloud.com':['icloud.co','icloud.con','iclod.com']};
+function fixMail(e){const [a,b]=e.split('@');if(!b)return '';for(const k in DOM)if(DOM[k].includes(b))return a+'@'+k;return ''}
+$('em').addEventListener('input',()=>{const v=$('em').value.trim().toLowerCase(),f=fixMail(v),s=$('sug');
+  if(f){s.innerHTML='تقصد <b dir="ltr">'+f+'</b>؟ <button type="button" id="sugY">آه، صححه</button>';s.classList.remove('hide');$('sugY').onclick=()=>{$('em').value=f;$('em2').value='';s.classList.add('hide');$('em2').focus()}}
+  else s.classList.add('hide')});
+
+$('f1').onsubmit=async e=>{e.preventDefault();clr('m1');const p=$('phone').value.trim(),g=$('reg').value.trim();
+  if(p.replace(/\D/g,'').length<10&&p.replace(/[^٠-٩]/g,'').length<10){msg('m1','اكتب رقم الموبايل كامل');return}if(!g){msg('m1','اكتب رقم الإشهار');return}
+  const b=$('b1');b.disabled=true;b.textContent='⏳ بندوّر…';
+  try{LK=await call({action:'lookup',phone:p,reg:g});
+    if(LK.state==='eligible'||LK.state==='trial'){$('o-name').textContent=LK.orgName;$('o-mail').textContent=LK.email||'مش مكتوب';
+      if(LK.state==='trial'){$('b2').textContent='ابعت رابط كلمة المرور تاني';msg('m2','الحساب التجريبي متفعّل بالفعل لحد '+fmt(LK.until)+'. اكتب نفس الإيميل علشان نبعتلك رابط كلمة المرور تاني.',true)}else{clr('m2');$('b2').textContent='فعّل الحساب التجريبي'}
+      wa('wa2');step(2);$('em').focus()}
+    else{msg('m1',LK.msg||'مش متاح');wa('wa1')}}
+  catch(x){msg('m1',x.message);wa('wa1')}
+  finally{b.disabled=false;b.textContent='دوّر على حجز جمعيتي'}};
+$('back').onclick=()=>step(1);
+
+$('f2').onsubmit=async e=>{e.preventDefault();clr('m2');const v=$('em').value.trim().toLowerCase(),v2=$('em2').value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)){msg('m2','الإيميل مكتوب غلط');return}
+  if(v!==v2){msg('m2','الإيميلين مش زي بعض. اكتبهم تاني');return}
+  const f=fixMail(v);if(f&&!confirm('الإيميل ده شكله فيه غلطة. تقصد '+f+'؟\n\nاضغط «OK» لو متأكد إن '+v+' صح.'))return;
+  const b=$('b2'),lbl=b.textContent;b.disabled=true;b.textContent='⏳ لحظة…';
+  try{const r=await call({action:'activate',phone:$('phone').value.trim(),reg:$('reg').value.trim(),email:v});
+    if(!r.existed){try{await auth.sendPasswordResetEmail(v,{url:PORTAL})}catch(x){}}
+    $('d-p').innerHTML=(r.existed?'الإيميل <b dir="ltr">'+v+'</b> عليه حساب على تنمويين مصر بالفعل، فادخل المنصة بنفس كلمة المرور بتاعته. لو ناسيها، دوس «نسيت كلمة المرور؟» في صفحة الدخول.'
+      :'بعتنالك إيميل على <b dir="ltr">'+v+'</b> فيه رابط تحط منه كلمة المرور. لو ما لقيتهوش خلال 5 دقايق، بص في Spam.')+'<br><br>التجربة سارية لحد <b>'+fmt(r.until||UNTIL)+'</b>.';
+    $('d-t').textContent=r.again?'بعتنالك الرابط تاني':'اتفعّل الحساب التجريبي';wa('wa3','الإيميل: '+v);step(3)}
+  catch(x){msg('m2',x.message);wa('wa2','الإيميل: '+v)}
+  finally{b.disabled=false;b.textContent=lbl}};
+</script>
+</body>
+</html>

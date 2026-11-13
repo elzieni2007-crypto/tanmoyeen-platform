@@ -480,7 +480,9 @@ function colRef(c){
 // الذكاء الاصطناعي: بيعدي على Cloud Function اللي فيها المفتاح، والجمعية عمرها ما بتشوف المفتاح.
 async function callAI(body,opts={}){await ready;if(!canWrite()){roDeny().catch(()=>{});throw Object.assign(new Error('صلاحيتك «مراجع» مش بتسمح بالكتابة بالذكاء الاصطناعي'),{code:'permission-denied'})}
   const tok=await auth.currentUser.getIdToken();
+  body.task=window.FP_TASK||'';// نوع المهمة: الحساب التجريبي مسموحله بمهام معينة بس، والسيرفر هو اللي بيقفل الباقي
   const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify(body),signal:opts.signal});
+  if(r.status===402&&window.FP_LOCK)window.FP_LOCK('كتابة المقترح');// حساب تجريبي: الأداة دي للمشتركين
   if(!r.ok){let m='';try{m=(await r.json()).error}catch(e){}throw new Error(m||('خدمة الكتابة مش متاحة دلوقتي ('+r.status+')'))}
   return r}
 async function sample(input,opts={}){const r=await callAI({mode:'text',prompt:String(input),tier:opts.modelTier||'full'},opts);
@@ -500,6 +502,11 @@ let _q=null,_qAt=0;
 window.FP.quota=async(force)=>{await ready;if(!force&&_q&&Date.now()-_qAt<30e3)return _q;try{const tok=await auth.currentUser.getIdToken();
   const r=await fetch(TEAM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'quota',orgId:window.FP.support?ORGID:undefined})});
   if(r.ok){_q=await r.json();_qAt=Date.now()}}catch(e){}return _q};window.FP.org=()=>ORG;
+window.FP.plan=()=>(ORG&&ORG.plan)||'paid';
+window.FP.quote=async()=>{await ready;const tok=await auth.currentUser.getIdToken();const r=await fetch(TEAM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'quote'})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'حصلت مشكلة، جرب تاني');return j};
+window.FP.hot=async(feature,opp)=>{try{await ready;if(window.FP.support)return;const tok=await auth.currentUser.getIdToken();
+  await fetch(TEAM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({action:'hot',feature,opp})})}catch(e){}};
 window.claude={use:async n=>n==='db'?{doc:docRef,collection:colRef}:n==='sample'?sample:n==='downloads'?downloads:n==='user'?user:null};
 })();
 // ملف تعريفي فاضي للجمعية الجديدة (بدل بيانات المثال)
@@ -2456,5 +2463,82 @@ FP.ready.then(()=>{if(!FP.support)return;const o=FP.org()||{};const bar=document
   bar.style.cssText='position:sticky;top:0;z-index:9999;background:#7c3aed;color:#fff;font:700 13px Cairo,sans-serif;padding:8px 14px;text-align:center';
   bar.textContent='🛠 وضع الدعم الفني: إنت شغال جوه حساب «'+(o.name||'')+'». أي تعديل هنا بيتحفظ عند الجمعية.';document.body.prepend(bar);
   const a=document.querySelector('.fp-acct a');if(a){a.textContent='↩ رجوع للوحة الأدمن';a.href='https://elzieni2007-crypto.github.io/tanmoyeen-masr/'}});
+
+// ===== الحساب التجريبي =====
+// مفتوح: الفرص ونسبة التوافق، تحليل الدعوة و Go/No-Go، دليل الممولين، الملف التعريفي، أفكار المقترح.
+// مقفول: كتابة المقترح (بالذكاء الاصطناعي أو من القوالب)، الترجمة، إيميل التقديم، تحميل Word والموازنة Excel.
+// القفل الحقيقي في السيرفر (fpai بيرفض أي مهمة مش مسموحة)، وده بس علشان الجمعية تفهم وتشترك.
+(function(){
+  // نوع كل مهمة بتروح للذكاء الاصطناعي، علشان السيرفر يعرف يسمح بإيه
+  function tag(name,task){const f=window[name];if(typeof f!=='function')return;
+    window[name]=async function(){const prev=window.FP_TASK;window.FP_TASK=task;try{return await f.apply(this,arguments)}finally{window.FP_TASK=prev}}}
+  tag('suggestIdeas','ideas');tag('analyzeGuide','guide');tag('aiExtract','extract');tag('pfExtract','extract');
+
+  const LOCKED={aiWrite:'كتابة المقترح',aiWriteDonor:'كتابة المقترح على نموذج المانح',translateProposal:'الترجمة الإنجليزي',aiEmail:'إيميل التقديم',
+    exportDocx:'تحميل Word',budgetXlsx:'تحميل الموازنة Excel',fillTemplate:'ملء نموذج الموازنة',budgetToProposal:'تحديث المقترح من الموازنة'};
+  const SEL={'#aiBtn':'كتابة المقترح','#genBtn':'كتابة المقترح','#trBtn':'الترجمة الإنجليزي','#docxBtn':'تحميل Word','#bXlsx':'تحميل الموازنة Excel'};
+  const trial=()=>window.FP&&FP.plan&&FP.plan()==='trial'&&!FP.support;
+  const esc=x=>String(x||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const oppTitle=()=>{try{const o=OBY(cur);return (o&&(o.title||o.t||o.name))||''}catch(e){return ''}};
+  let WA='',UNTIL='';
+  function untilTxt(){const d=UNTIL?new Date(UNTIL+'T12:00:00'):null;return d?d.toLocaleDateString('ar-EG',{day:'numeric',month:'long'}):'آخر نوفمبر'}
+
+  // نافذة «للمشتركين بس»
+  function lock(feature){if(!trial())return;const opp=oppTitle();FP.hot(feature,opp);
+    let m=document.getElementById('fpLock');if(m)m.remove();m=document.createElement('div');m.id='fpLock';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');
+    const org=(FP.org()||{}).name||'';
+    const txt='السلام عليكم، احنا '+org+' وعايزين نشترك في منصة فرص التمويل'+(opp?' علشان نكمل مقترح «'+opp+'»':'')+'.';
+    const sub='<button class="fpl-b" type="button" id="fplQ">📄 ابعتولي عرض السعر</button>'+(WA?'<a class="fpl-w" href="https://wa.me/'+WA+'?text='+encodeURIComponent(txt)+'" target="_blank" rel="noopener">💬 عندي سؤال (واتساب)</a>':'');
+    m.innerHTML='<div class="fpl-c"><div class="fpl-ic">🔒</div><h3>'+esc(feature)+' للجمعيات المشتركة</h3>'+
+      '<p>في الحساب التجريبي بتشوفوا الفرص المناسبة لجمعيتكم، وتحللوا الدعوات، وتاخدوا أفكار للمقترح. '+
+      'لما تشتركوا، المنصة تكتب المقترح كامل من الفكرة اللي اخترتوها، ومعاه الموازنة وخطة العمل والنسخة الإنجليزي وإيميل التقديم.</p>'+
+      (opp?'<p class="fpl-o">الفرصة اللي شغالين عليها: <b>'+esc(opp)+'</b></p>':'')+
+      '<div class="fpl-r">'+sub+'<button class="fpl-x" type="button" id="fplX">أكمل التجربة</button></div><div class="fpl-m" id="fplMsg"></div></div>';
+    document.body.appendChild(m);const close=()=>m.remove();
+    m.addEventListener('click',e=>{if(e.target===m)close()});document.getElementById('fplX').onclick=close;
+    document.addEventListener('keydown',function k(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',k)}});
+    document.getElementById('fplQ').onclick=()=>openQuote(document.getElementById('fplQ'),document.getElementById('fplMsg'));
+    const rq=document.getElementById('fplReq');if(rq)rq.onclick=async()=>{rq.disabled=true;
+      try{await FP.fs.collection('contact_messages').add({name:org,info:(FP.auth.currentUser||{}).email||'',type:'منصة الفرص: طلب اشتراك من حساب تجريبي',msg:txt,
+          timestamp:firebase.firestore.FieldValue.serverTimestamp(),status:'unread'});document.getElementById('fplMsg').textContent='✅ وصلنا طلبك، وهنكلمكم قريب'}
+      catch(e){rq.disabled=false;document.getElementById('fplMsg').textContent='حصلت مشكلة، جرب تاني'}};
+    setTimeout(()=>{const b=m.querySelector('.fpl-b');b&&b.focus()},50)}
+  window.FP_LOCK=lock;
+  // عرض السعر: بيفتح نفس صفحة العرض اللي الأدمن بيبعتها، والجمعية توافق منها. والطلب بيظهر للأدمن.
+  async function openQuote(btn,out){const w=window.open('about:blank','_blank');btn.disabled=true;const t=btn.textContent;btn.textContent='⏳ بنجهز العرض…';
+    try{const r=await FP.quote();
+      if(r.url){if(w&&!w.closed)w.location.href=r.url;out.innerHTML='✅ اتفتح عرض السعر'+(r.no?' رقم <span dir="ltr">'+esc(r.no)+'</span>':'')+' في صفحة جديدة. لو ماظهرش، <a href="'+esc(r.url)+'" target="_blank" rel="noopener">افتحه من هنا</a>. ومن نفس الصفحة تقدروا توافقوا أو تبعتوا استفسار.'}
+      else{if(w)w.close();out.textContent='✅ وصلنا طلبك، وهنبعتلكم عرض السعر على الإيميل أو واتساب خلال يوم عمل'}}
+    catch(e){if(w)w.close();out.textContent='حصلت مشكلة: '+e.message}
+    finally{btn.disabled=false;btn.textContent=t}}
+  window.FP_QUOTE=openQuote;
+
+  Object.keys(LOCKED).forEach(n=>{const f=window[n];if(typeof f!=='function')return;
+    window[n]=function(){if(trial()){lock(LOCKED[n]);return Promise.resolve()}return f.apply(this,arguments)}});
+  // الأزرار نفسها: نوقف الضغطة قبل ما توصل للزرار (علشان «مسودة من القوالب» ماتكتبش المقترح من غير ذكاء اصطناعي).
+  // على window مش document، علشان تسبق أي فحص تاني على نفس الأزرار (زي «اعتمدوا الفكرة الأول»)
+  window.addEventListener('click',e=>{if(!trial())return;for(const s in SEL){const b=e.target.closest&&e.target.closest(s);if(b){e.preventDefault();e.stopImmediatePropagation();lock(SEL[s]);return}}},true);
+
+  const st=document.createElement('style');st.textContent=
+    '#fpLock{position:fixed;inset:0;z-index:10000;background:rgba(10,24,48,.55);display:flex;align-items:center;justify-content:center;padding:16px}'+
+    '.fpl-c{background:var(--surface,#fff);color:var(--ink,#11243a);border-radius:18px;max-width:440px;width:100%;padding:24px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center}'+
+    '.fpl-ic{font-size:34px}.fpl-c h3{margin:6px 0 10px;font-size:19px}.fpl-c p{font-size:14.5px;line-height:1.8;color:var(--muted,#55657a);margin:0 0 10px}.fpl-o b{color:var(--ink,#11243a)}'+
+    '.fpl-r{display:flex;flex-direction:column;gap:8px;margin-top:14px}.fpl-b{display:block;background:#1f9d55;color:#fff;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;font-size:15px;text-decoration:none;cursor:pointer}'+
+    '.fpl-w{display:block;color:#127a45;background:#e7f7ee;border-radius:12px;padding:11px;font-weight:800;text-decoration:none}.fpl-m a{color:#1a3a6e;font-weight:700}.fpl-x{background:none;border:1px solid var(--line,#d3dee8);border-radius:12px;padding:11px;font:inherit;font-weight:700;color:var(--ink,#11243a);cursor:pointer}.fpl-m{font-size:13.5px;margin-top:8px;color:#0f8a5f}'+
+    '.fp-trialbar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center;background:#fff6dc;color:#6b4a00;border-bottom:1px solid #f1d98e;font-size:13.5px;padding:8px 14px;text-align:center}'+
+    '.fp-trialbar button{background:#1a3a6e;color:#fff;border:0;border-radius:999px;padding:5px 14px;font:inherit;font-weight:700;cursor:pointer}'+
+    '.fp-locked::before{content:"🔒 "}';
+  document.head.appendChild(st);
+
+  FP.ready.then(async()=>{if(!trial())return;
+    try{const d=await FP.fs.doc('fp_meta/trial').get();const x=(d.exists&&d.data())||{};WA=String(x.wa||'').replace(/\D/g,'');UNTIL=x.until||''}catch(e){}
+    if(!UNTIL){const u=(FP.org()||{}).paidUntil;if(u&&u.toDate){const d=u.toDate();UNTIL=d.toISOString().slice(0,10)}}
+    const bar=document.createElement('div');bar.className='fp-trialbar';
+    bar.innerHTML='<span>🧪 <b>حساب تجريبي</b> لحد '+untilTxt()+': الفرص وتحليل الدعوات والأفكار مفتوحة، وكتابة المقترح للمشتركين.</span><button type="button">اشترك وكمّل</button>';
+    document.body.prepend(bar);bar.querySelector('button').onclick=()=>lock('كتابة المقترح');
+    // علامة قفل على الأزرار المقفولة كل ما الصفحة تترسم
+    const mark=()=>{for(const s in SEL)document.querySelectorAll(s).forEach(b=>b.classList.add('fp-locked'))};mark();
+    new MutationObserver(mark).observe(document.body,{childList:true,subtree:true})});
+})();
 
 </script>
