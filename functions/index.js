@@ -4,7 +4,7 @@
 const {onRequest}=require('firebase-functions/v2/https');
 const {defineSecret}=require('firebase-functions/params');
 const admin=require('firebase-admin');
-const {FieldValue}=require('firebase-admin/firestore');
+const {FieldValue,Timestamp}=require('firebase-admin/firestore');
 admin.initializeApp();
 const db=admin.firestore();
 const KEY=defineSecret('ANTHROPIC_API_KEY');
@@ -32,7 +32,7 @@ async function who(req){
   if(org.status!=='active'||!until||until<new Date())throw [403,'اشتراك الجمعية متوقف أو منتهي. تواصل مع إدارة تنمويين مصر'];
   if(mem.status!=='active')throw [403,'حسابك متوقف من مدير حساب الجمعية'];
   if(!['owner','editor'].includes(mem.role))throw [403,'صلاحيتك «مراجع» مش بتسمح بالكتابة بالذكاء الاصطناعي'];
-  return {uid:t.uid,orgId,name:mem.name||t.email,org};
+  return {uid:t.uid,orgId,name:mem.name||t.email,email:t.email,org};
 }
 
 // ===== مراقبة التكلفة =====
@@ -41,6 +41,16 @@ const RATES0={full:[4,20],std:[2,10],quick:[0.1,0.5]};
 // الحدود الافتراضية لكل جمعية (تقدر تغيرها من شاشة «مالية المنصة» للكل أو لكل جمعية لوحدها)
 // 0 = من غير حد. دلوقتي مراقبة بس، والحدود بتتفعل من شاشة «مالية المنصة» لو احتجناها
 const CAP0={enabled:true,orgMonthUsd:0,orgDayUsd:0,totalMonthUsd:0};
+// ===== الحساب التجريبي =====
+// الجمعية التجريبية بتشوف الفرص وتحللها وتاخد أفكار، والكتابة نفسها (المقترح والموازنة والترجمة والإيميل) للمشتركين بس.
+// القفل هنا في السيرفر، مش في الشاشة بس.
+const TRIAL_TASKS={ideas:3,guide:2,extract:6};// أقصى عدد لكل مهمة في الفترة التجريبية
+const TRIAL_USD=1;// حد التكلفة لكل حساب تجريبي، لو مفيش حد خاص بالجمعية
+const isTrial=o=>!!o&&o.plan==='trial';
+let _tc=null,_tcAt=0;
+async function trialCfg(){if(_tc&&Date.now()-_tcAt<60e3)return _tc;const d=await db.doc('fp_meta/trial').get().catch(()=>null);const x=(d&&d.exists&&d.data())||{};
+  const until=/^\d{4}-\d{2}-\d{2}$/.test(x.until||'')?x.until:'2026-11-30';
+  _tc={open:x.open!==false,until,end:new Date(until+'T23:59:00+02:00'),wa:String(x.wa||'').replace(/\D/g,'')};_tcAt=Date.now();return _tc}
 const cairoDay=()=>new Date(Date.now()+2*3600e3).toISOString().slice(0,10);
 let _cfg=null,_cfgAt=0;
 async function aiCfg(){if(_cfg&&Date.now()-_cfgAt<60e3)return _cfg;const d=await db.doc('fp_meta/ai').get().catch(()=>null);
@@ -49,25 +59,31 @@ const usdOf=(cfg,tier,i,o)=>{const r=cfg.rates[tier]||RATES0.full;return (i*r[0]
 async function quota(me){const cfg=await aiCfg(),day=cairoDay(),mon=day.slice(0,7);
   const [u,tot]=await Promise.all([db.doc(`fp_usage/${me.orgId}_${mon}`).get(),db.doc(`fp_usage/_total_${mon}`).get()]);
   const ud=u.data()||{},td=tot.data()||{},o=me.org||{};
-  const capM=+o.aiMonthUsd>0?+o.aiMonthUsd:cfg.orgMonthUsd,capD=+o.aiDayUsd>0?+o.aiDayUsd:cfg.orgDayUsd;
-  return {cfg,monthUsd:+ud.usd||0,dayUsd:+((ud.days||{})[day]||{}).usd||0,totalUsd:+td.usd||0,capM,capD,unlimited:o.aiUnlimited===true}}
+  const capM=+o.aiMonthUsd>0?+o.aiMonthUsd:isTrial(o)?TRIAL_USD:cfg.orgMonthUsd,capD=+o.aiDayUsd>0?+o.aiDayUsd:cfg.orgDayUsd;
+  return {cfg,tasks:ud.tasks||{},monthUsd:+ud.usd||0,dayUsd:+((ud.days||{})[day]||{}).usd||0,totalUsd:+td.usd||0,capM,capD,unlimited:o.aiUnlimited===true}}
 async function checkCap(me){if(me.orgId==='_admin')return null;const q=await quota(me);
   if(!q.cfg.enabled)return 'الكتابة بالذكاء الاصطناعي متوقفة مؤقتًا من الإدارة. جرب بعد شوية أو كلمنا';
   if(q.unlimited)return null;
+  if(isTrial(me.org)&&me.task&&TRIAL_TASKS[me.task]&&(+q.tasks[me.task]||0)>=TRIAL_TASKS[me.task])return 'خلصتوا المسموح بيه للأداة دي في الحساب التجريبي. اشتركوا علشان تكملوا من غير حدود';
   if(q.cfg.totalMonthUsd>0&&q.totalUsd>=q.cfg.totalMonthUsd)return 'الكتابة بالذكاء الاصطناعي متوقفة مؤقتًا لضغط الاستخدام الشهر ده. كلم إدارة تنمويين مصر';
   if(q.capM>0&&q.monthUsd>=q.capM)return 'جمعيتكم وصلت للحد الشهري للكتابة بالذكاء الاصطناعي. تقدروا تكملوا تعديل المقترحات بإيديكم، أو تكلموا الإدارة لزيادة الحد';
   if(q.capD>0&&q.dayUsd>=q.capD)return 'جمعيتكم وصلت لحد النهارده للكتابة بالذكاء الاصطناعي. الحد بيتجدد بكرة، وتقدروا تكملوا تعديل المقترح بإيديكم';
   return null}
-async function logUsage(orgId,tier,model,usage){
+async function logUsage(orgId,tier,model,usage,task){
   const cfg=await aiCfg(),day=cairoDay(),mon=day.slice(0,7);const inc=FieldValue.increment;
   const i=(usage&&usage.input_tokens)||0,o=(usage&&usage.output_tokens)||0,usd=usdOf(cfg,tier,i,o);
   await Promise.all([
     db.doc(`fp_usage/${orgId}_${mon}`).set({orgId,month:mon,calls:inc(1),inTok:inc(i),outTok:inc(o),usd:inc(usd),
-      by:{[tier]:{calls:inc(1),in:inc(i),out:inc(o),usd:inc(usd)}},days:{[day]:{calls:inc(1),usd:inc(usd)}},model:{[tier]:model},
+      by:{[tier]:{calls:inc(1),in:inc(i),out:inc(o),usd:inc(usd)}},tasks:{[task||'other']:inc(1)},days:{[day]:{calls:inc(1),usd:inc(usd)}},model:{[tier]:model},
       last:FieldValue.serverTimestamp()},{merge:true}),
     db.doc(`fp_usage/_total_${mon}`).set({orgId:'_total',month:mon,calls:inc(1),usd:inc(usd),days:{[day]:{calls:inc(1),usd:inc(usd)}},last:FieldValue.serverTimestamp()},{merge:true})
   ]).catch(e=>console.error('usage',e));
 }
+
+// «عميل ساخن»: جمعية تجريبية حاولت تستخدم أداة للمشتركين بس. بيظهر للأدمن في «حسابات المنصة» علشان يكلمها.
+async function markHot(orgId,feature,opp,email){if(!orgId||orgId==='_admin')return;
+  await db.doc('orgs/'+orgId).set({hot:{count:FieldValue.increment(1),last:FieldValue.serverTimestamp(),feature:String(feature||'').slice(0,40),opp:String(opp||'').slice(0,200),by:String(email||'').slice(0,120)}},{merge:true}).catch(e=>console.error('hot',e))}
+const LOCKED_MSG='كتابة المقترح والموازنة والترجمة متاحة للجمعيات المشتركة. اشتركوا علشان تكملوا المقترح من الفكرة اللي اخترتوها';
 
 // بيكلم Claude بالـ streaming وبيبعت كل جزء نص لـ onDelta
 async function claude({model,maxTok,system,prompt,signal,onDelta}){
@@ -92,20 +108,22 @@ function parseJSON(t){let s=String(t).trim().replace(/^```(?:json)?\s*/i,'').rep
 exports.fpai=onRequest({secrets:[KEY],region:'us-central1',cors:ORIGINS.concat(process.env.FP_EXTRA_ORIGIN?[process.env.FP_EXTRA_ORIGIN]:[]),timeoutSeconds:540,memory:'512MiB',maxInstances:20,concurrency:40},async(req,res)=>{
   if(req.method!=='POST')return bad(res,405,'POST only');
   let me;try{me=await who(req)}catch(e){return Array.isArray(e)?bad(res,e[0],e[1]):bad(res,500,'حصلت مشكلة في التحقق من الحساب')}
-  const {mode,prompt}=req.body||{};const tier=['full','std','quick'].includes(req.body&&req.body.tier)?req.body.tier:'std';
+  const {mode,prompt}=req.body||{};const task=String((req.body&&req.body.task)||'').slice(0,20);me.task=task;
+  if(isTrial(me.org)&&!TRIAL_TASKS[task]){await markHot(me.orgId,task||'write',req.body&&req.body.opp,me.email);return bad(res,402,LOCKED_MSG)}
+  const tier=['full','std','quick'].includes(req.body&&req.body.tier)?req.body.tier:'std';
   if(typeof prompt!=='string'||!prompt.trim())return bad(res,400,'الطلب فاضي');
   if(prompt.length>MAX_PROMPT)return bad(res,413,'النص طويل جدًا. قلل حجم المستندات المرفوعة');
   try{const capMsg=await checkCap(me);if(capMsg)return bad(res,429,capMsg)}catch(e){console.error('cap',e)}
   const model=MODELS[tier],ctl=new AbortController();res.on('close',()=>{if(!res.writableEnded)ctl.abort()});
   if(mode==='json'){
-    try{const out=await claude({model,maxTok:MAXTOK[tier],system:JSON_SYS,prompt,signal:ctl.signal});await logUsage(me.orgId,tier,model,out.usage);
+    try{const out=await claude({model,maxTok:MAXTOK[tier],system:JSON_SYS,prompt,signal:ctl.signal});await logUsage(me.orgId,tier,model,out.usage,task);
       let data;try{data=parseJSON(out.text)}catch(e){return bad(res,502,'الرد ما كانش بالشكل المطلوب. جرب تاني')}
       return res.json({data})}catch(e){if(ctl.signal.aborted)return;return bad(res,502,e.message)}}
   // mode text: NDJSON stream {t:"…"} … {end:true,truncated}
   res.status(200).set({'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-cache','X-Accel-Buffering':'no'});
   if(res.flushHeaders)res.flushHeaders();
   try{const out=await claude({model,maxTok:MAXTOK[tier],system:TEXT_SYS,prompt,signal:ctl.signal,onDelta:t=>res.write(JSON.stringify({t})+'\n')});
-    await logUsage(me.orgId,tier,model,out.usage);res.write(JSON.stringify({end:true,truncated:out.stop==='max_tokens'})+'\n');res.end()}
+    await logUsage(me.orgId,tier,model,out.usage,task);res.write(JSON.stringify({end:true,truncated:out.stop==='max_tokens'})+'\n');res.end()}
   catch(e){if(ctl.signal.aborted)return;res.write(JSON.stringify({err:e.message})+'\n');res.end()}
 });
 
@@ -118,6 +136,44 @@ const caller=async req=>{const h=req.get('Authorization')||'';const m=h.match(/^
   try{return await admin.auth().verifyIdToken(m[1])}catch(e){throw [401,'انتهت جلسة الدخول. سجل دخول تاني']}};
 const orgOk=o=>{const u=o&&o.paidUntil&&o.paidUntil.toDate?o.paidUntil.toDate():null;return !!o&&o.status==='active'&&!!u&&u>new Date()};
 const rndPw=()=>require('crypto').randomBytes(24).toString('base64url')+'Aa1!';
+
+// ===== عرض السعر للحساب التجريبي =====
+// بيستخدم نفس نظام عروض الأسعار في لوحة الأدمن: quote_public/{token} + funding_waitlist.quote/quoteToken، ورابط الموافقة quote.html?k=
+// لو الحجز عليه عرض اتجهز قبل كده بيرجعه زي ما هو. لو مفيش، بيعمل عرض جديد بنسخة من «العرض الافتراضي»:
+// العرض اللي الأدمن اختاره في إعدادات التجربة (fp_meta/trial.quoteTpl)، وإلا آخر عرض اتبعت.
+const QUOTE_URL='https://elzieni2007-crypto.github.io/tanmoyeen-masr/quote.html?k=';
+const arDate=d=>d.toLocaleDateString('ar-EG-u-nu-latn',{day:'numeric',month:'long',year:'numeric',timeZone:'Africa/Cairo'});
+async function quoteTemplate(){const c=await db.doc('fp_meta/trial').get().catch(()=>null);const tok=c&&c.exists&&c.data().quoteTpl;
+  let pub=null;if(tok){const d=await db.doc('quote_public/'+tok).get();if(d.exists)pub={tok,...d.data()}}
+  if(!pub){const q=await db.collection('quote_public').where('status','==','open').get();
+    const L=q.docs.map(d=>({tok:d.id,...d.data()})).filter(x=>x.source!=='trial'&&+x.monthly>0).sort((a,b)=>((b.updatedAt&&b.updatedAt.toMillis?b.updatedAt.toMillis():0)-(a.updatedAt&&a.updatedAt.toMillis?a.updatedAt.toMillis():0)));pub=L[0]||null}
+  if(!pub)return null;let bq={};if(pub.bookingId){const b=await db.doc('funding_waitlist/'+pub.bookingId).get();bq=(b.exists&&b.data().quote)||{}}
+  return {pub,bq}}
+async function quoteFor(orgId,o,email){
+  const now=FieldValue.serverTimestamp();
+  let w=null;if(o.waitlistId){const d=await db.doc('funding_waitlist/'+o.waitlistId).get();if(d.exists)w={id:d.id,...d.data()}}
+  if(!w){const q=await db.collection('funding_waitlist').where('orgId','==',orgId).limit(1).get();if(!q.empty)w={id:q.docs[0].id,...q.docs[0].data()}}
+  await db.doc('orgs/'+orgId).set({quoteReq:{count:FieldValue.increment(1),last:now,by:String(email||'').slice(0,120)},
+    hot:{count:FieldValue.increment(1),last:now,feature:'طلب عرض السعر',by:String(email||'').slice(0,120)}},{merge:true});
+  if(w&&w.quoteToken){const p=await db.doc('quote_public/'+w.quoteToken).get();
+    if(p.exists&&p.data().status!=='void'){await db.doc('funding_waitlist/'+w.id).update({quoteRequestedAt:now});return {url:QUOTE_URL+w.quoteToken,no:p.data().no||'',existing:true}}}
+  const tpl=await quoteTemplate();
+  if(!w||!tpl){if(w)await db.doc('funding_waitlist/'+w.id).update({quoteRequestedAt:now});return {pending:true}}
+  // رقم العرض: سلسلة خاصة بالعروض التلقائية (W) علشان ماتتلخبطش مع ترقيم لوحة الأدمن
+  const y=new Date().getFullYear(),seqRef=db.doc('fp_meta/quoteSeq');
+  const n=await db.runTransaction(async tx=>{const d=(await tx.get(seqRef)).data()||{};const k='y'+y,v=(+d[k]||0)+1;tx.set(seqRef,{[k]:v},{merge:true});return v});
+  const no='TM-FP-'+y+'-W'+String(n).padStart(3,'0'),tok=require('crypto').randomBytes(12).toString('hex');
+  const today=new Date(),valid=+tpl.bq.valid||30,vu=new Date(today.getTime()+valid*864e5),P=tpl.pub;
+  const assoc=o.name||w.orgName||'',contact=w.contactName||o.contactName||'';
+  const pub={bookingId:w.id,no,assoc,contact,setup:+P.setup||0,monthly:+P.monthly||0,annualMonths:+P.annualMonths||10,deposit:+P.deposit||0,cap:+P.cap||100,
+    validUntil:arDate(vu),bankName:P.bankName||'',bankAcc:P.bankAcc||'',instapay:P.instapay||'',senderEmail:P.senderEmail||'',senderPhone:P.senderPhone||'',
+    status:'open',source:'trial',updatedAt:now};
+  const q=Object.assign({},tpl.bq,{assoc,contact,email:w.contactEmail||o.email||'',phone:w.phone||o.phone||'',no,date:new Date(today.getTime()+2*3600e3).toISOString().slice(0,10),valid,
+    setup:pub.setup,monthly:pub.monthly,annualMonths:pub.annualMonths,deposit:pub.deposit,cap:pub.cap,bankName:pub.bankName,bankAcc:pub.bankAcc,instapay:pub.instapay,
+    senderEmail:pub.senderEmail,senderPhone:pub.senderPhone,intro:'',acceptUrl:QUOTE_URL+tok,status:'sent',source:'trial',updatedAt:today.toISOString()});
+  const up={quote:q,quoteToken:tok,quoteRequestedAt:now,updatedAt:now};if(['pending','contacted',undefined,''].includes(w.status))up.status='quoted';
+  await db.doc('quote_public/'+tok).set(pub);await db.doc('funding_waitlist/'+w.id).update(up);
+  return {url:QUOTE_URL+tok,no,created:true}}
 
 exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.FP_EXTRA_ORIGIN?[process.env.FP_EXTRA_ORIGIN]:[]),maxInstances:10},async(req,res)=>{
   if(req.method!=='POST')return bad(res,405,'POST only');
@@ -134,6 +190,16 @@ exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.F
       const oid=isAdm&&b.orgId?String(b.orgId):orgId;const o=await db.doc('orgs/'+oid).get();
       const q=await quota({orgId:oid,org:o.data()||{}});
       return res.json({monthUsd:q.monthUsd,dayUsd:q.dayUsd,capM:q.capM,capD:q.capD,unlimited:q.unlimited,enabled:q.cfg.enabled})}
+    if(action==='hot'){
+      const u=await db.doc('users/'+t.uid).get();const orgId=(u.data()||{}).orgId;if(!orgId)return res.json({ok:false});
+      const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();if(!m.exists)return res.json({ok:false});
+      const o=await db.doc('orgs/'+orgId).get();if(!isTrial(o.data()))return res.json({ok:false});
+      await markHot(orgId,b.feature,b.opp,t.email);return res.json({ok:true})}
+    if(action==='quote'){// الجمعية التجريبية تطلب عرض السعر: نفتحلها العرض اللي اتجهزلها، ولو مفيش نجهزه من العرض الافتراضي
+      const u=await db.doc('users/'+t.uid).get();const orgId=(u.data()||{}).orgId;if(!orgId)return bad(res,404,'الحساب ده مش مربوط بجمعية');
+      const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();if(!m.exists)return bad(res,403,'إنت مش عضو في الجمعية دي');
+      const o=(await db.doc('orgs/'+orgId).get()).data()||{};
+      return res.json(await quoteFor(orgId,o,t.email))}
     if(action==='switch'){
       const orgId=String(b.orgId||'');const m=await db.doc('orgs/'+orgId+'/members/'+t.uid).get();
       if(!m.exists||m.data().status!=='active')return bad(res,403,'إنت مش عضو نشط في الجمعية دي');
@@ -167,4 +233,68 @@ exports.fpteam=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.F
       return res.json({ok:true,uid:user.uid,existed})}
     return bad(res,400,'طلب غير معروف')}
   catch(e){console.error('fpteam',e);return bad(res,500,'حصلت مشكلة: '+(e.message||e))}
+});
+
+// ===== fptrial: الجمعية بتفعّل حسابها التجريبي بنفسها =====
+// بتكتب الموبايل ورقم الإشهار اللي حجزت بيهم، وبعدين تأكد إيميلها أو تصححه (مرة واحدة قبل التفعيل)،
+// والدالة بتعمل حساب تجريبي بمستخدم واحد لحد آخر يوم في الفترة التجريبية. مفيش تسجيل دخول هنا، فبنحد عدد المحاولات.
+const AR_DIG={'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9','۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9'};
+const enDig=x=>String(x||'').replace(/[٠-٩۰-۹]/g,c=>AR_DIG[c]);
+const normPhone=x=>{let d=enDig(x).replace(/\D/g,'');if(d.startsWith('0020'))d=d.slice(4);else if(d.startsWith('20')&&d.length>=12)d=d.slice(2);if(d.startsWith('0'))d=d.slice(1);return d.length>=9?d.slice(-10):''};
+const normReg=x=>{const d=enDig(x).replace(/\D/g,'').replace(/^0+/,'');return d||String(x||'').trim().toLowerCase().replace(/\s+/g,'')};
+const maskMail=e=>{const [a,b]=String(e||'').split('@');if(!b)return '';return a.slice(0,Math.min(2,a.length))+'***@'+b};
+const okMail=e=>/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e);
+let _wl=null,_wlAt=0;
+async function waitlist(force){if(!force&&_wl&&Date.now()-_wlAt<60e3)return _wl;const q=await db.collection('funding_waitlist').get();_wl=q.docs.map(d=>Object.assign({id:d.id},d.data()));_wlAt=Date.now();return _wl}
+async function rateOk(req,max){const ip=String(req.get('x-forwarded-for')||req.ip||'').split(',')[0].trim();const id=require('crypto').createHash('sha256').update('fpt'+ip).digest('hex').slice(0,32);
+  const ref=db.doc('fp_rl/'+id),d=(await ref.get()).data()||{},hr=Math.floor(Date.now()/3600e3);const n=d.hr===hr?(+d.n||0):0;
+  if(n>=max)return false;await ref.set({hr,n:n+1},{merge:false});return true}
+// الحجز اللي بيطابق الموبايل ورقم الإشهار (لو أكتر من حجز، الأولوية للي عليه حساب، وبعدين الأحدث)
+async function findBooking(phone,reg,force){const P=normPhone(phone),G=normReg(reg);if(!P||!G)return null;
+  const L=(await waitlist(force)).filter(w=>normPhone(w.phone)===P&&normReg(w.regNumber)===G);
+  if(!L.length)return null;L.sort((a,b)=>(b.orgId?1:0)-(a.orgId?1:0)||((b.timestamp&&b.timestamp.toMillis?b.timestamp.toMillis():0)-(a.timestamp&&a.timestamp.toMillis?a.timestamp.toMillis():0)));return L[0]}
+// لو الجمعية عندها حساب بالفعل (من الحجز ده أو من حجز تاني بنفس الموبايل أو رقم الإشهار)
+async function orgFor(w){if(w.orgId){const o=await db.doc('orgs/'+w.orgId).get();if(o.exists)return {id:o.id,...o.data()}}
+  const P=normPhone(w.phone),G=normReg(w.regNumber);const q=await db.collection('orgs').get();
+  const m=q.docs.find(d=>{const x=d.data();return (P&&normPhone(x.phone)===P&&G&&normReg(x.regNumber)===G)});return m?{id:m.id,...m.data()}:null}
+function stateOf(o,cfg){if(!o)return (cfg.open&&cfg.end>new Date())?'eligible':'closed';
+  const ok=orgOk(o);if(isTrial(o))return ok?'trial':'ended';return ok?'subscribed':'expired'}
+const STATE_MSG={closed:'الفترة التجريبية خلصت. كلمنا على واتساب علشان تشترك',subscribed:'جمعيتكم مشتركة بالفعل. ادخلوا من صفحة الدخول بالإيميل وكلمة المرور',
+  expired:'اشتراك جمعيتكم منتهي. كلمنا على واتساب علشان نجدده',ended:'الفترة التجريبية لجمعيتكم خلصت. كلمنا على واتساب علشان تشتركوا وتكملوا'};
+
+exports.fptrial=onRequest({region:'us-central1',cors:ORIGINS.concat(process.env.FP_EXTRA_ORIGIN?[process.env.FP_EXTRA_ORIGIN]:[]),maxInstances:5},async(req,res)=>{
+  if(req.method!=='POST')return bad(res,405,'POST only');
+  const b=req.body||{},action=b.action;
+  try{
+    const cfg=await trialCfg();
+    if(action==='cfg')return res.json({open:cfg.open&&cfg.end>new Date(),until:cfg.until,wa:cfg.wa});
+    if(!await rateOk(req,30))return bad(res,429,'محاولات كتير. جرب كمان ساعة، أو كلمنا على واتساب');
+    const w=await findBooking(b.phone,b.reg,action==='activate');
+    if(!w)return res.status(404).json({error:'مش لاقيين حجز بالموبايل ورقم الإشهار دول. اتأكد إنهم نفس اللي حجزت بيهم، أو كلمنا على واتساب',wa:cfg.wa});
+    const o=await orgFor(w),st=stateOf(o,cfg);
+    if(action==='lookup')return res.json({state:st,orgName:(o&&o.name)||w.orgName||'',email:maskMail((o&&o.email)||w.contactEmail),until:st==='trial'?cfg.until:'',msg:STATE_MSG[st]||'',wa:cfg.wa});
+    if(action!=='activate')return bad(res,400,'طلب غير معروف');
+    const email=String(b.email||'').trim().toLowerCase();if(!okMail(email))return bad(res,400,'الإيميل مكتوب غلط');
+    if(st==='trial'){// الحساب متفعّل: نبعت رابط كلمة المرور تاني بس لو نفس الإيميل
+      if(String(o.email||'').toLowerCase()!==email)return res.status(409).json({error:'الحساب التجريبي متفعّل بالفعل على إيميل تاني ('+maskMail(o.email)+'). لو عايز تغيره كلمنا على واتساب',wa:cfg.wa});
+      return res.json({ok:true,state:'trial',again:true,until:cfg.until})}
+    if(st!=='eligible')return res.status(409).json({error:STATE_MSG[st],state:st,wa:cfg.wa});
+    // حساب تجريبي جديد بمستخدم واحد
+    const name=String(w.contactName||'').slice(0,120),now=FieldValue.serverTimestamp(),old=String(w.contactEmail||'').trim().toLowerCase();
+    const oRef=db.collection('orgs').doc();
+    await oRef.set({name:String(w.orgName||'').slice(0,150),email,phone:w.phone||'',gov:w.gov||'',regNumber:w.regNumber||'',contactName:name,ownerUid:'',seats:1,
+      status:'active',plan:'trial',paidUntil:Timestamp.fromDate(cfg.end),notes:'',waitlistId:w.id,createdAt:now,updatedAt:now,createdBy:'trial-self',trialAt:now,
+      trialEmailOld:old&&old!==email?old:''});
+    let user,existed=true;
+    try{user=await admin.auth().getUserByEmail(email)}catch(e){if(e.code!=='auth/user-not-found'){await oRef.delete();throw e}existed=false;user=await admin.auth().createUser({email,password:rndPw(),displayName:name||undefined})}
+    const uRef=db.doc('users/'+user.uid),ud=(await uRef.get()).data()||{};
+    let keepCur=false;if(ud.orgId){const cm=await db.doc('orgs/'+ud.orgId+'/members/'+user.uid).get();keepCur=cm.exists&&cm.data().status==='active'}
+    const bt=db.batch();
+    bt.set(oRef.collection('members').doc(user.uid),{email,name,role:'owner',status:'active',addedAt:now,addedBy:'trial-self'});
+    bt.set(uRef,Object.assign({orgs:FieldValue.arrayUnion(oRef.id)},keepCur?{}:{orgId:oRef.id}),{merge:true});
+    bt.update(oRef,{ownerUid:user.uid});
+    bt.update(db.doc('funding_waitlist/'+w.id),Object.assign({orgId:oRef.id,trialOrg:oRef.id,trialAt:now,contactEmail:email},old&&old!==email?{contactEmailOld:old}:{}));
+    await bt.commit();_wl=null;
+    return res.json({ok:true,state:'trial',existed,until:cfg.until})}
+  catch(e){console.error('fptrial',e);return bad(res,500,'حصلت مشكلة. جرب تاني، أو كلمنا على واتساب')}
 });
