@@ -734,7 +734,7 @@ const I={
  up:'<path d="M3 17l6-6 4 4 8-8M14 7h7v7"/>',copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>'};
 const ic=(n,cls='')=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${I[n]}</svg>`;
 const NAV=[['discover','استكشاف الفرص','search'],['dash','لوحة القيادة','grid'],['opps','الفرص','brief'],['details','تفاصيل الفرصة','doc'],['gonogo','قرار التقدم Go / No-Go','check'],['comp','مصفوفة الامتثال','clip'],['analyzer','محلل الدعوات','bot'],['proposal','كتابة المقترح','pen'],['pipeline','خط التمويل','kanban'],'-',['profile','بروفايل الجمعية','org']];
-let page='discover',minFit=50,scanState=null;
+let page='discover',minFit=0,scanState=null;
 function toast(t){const x=$('toast');x.textContent=t;x.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>x.hidden=true,2800)}
 function go(p,id){if(id!=null){cur=String(id);LS.set('tm4_cur',cur)}page=p;document.querySelectorAll('.page').forEach(s=>s.classList.toggle('active',s.id===p));
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.p===p));R[p]();window.scrollTo(0,0)}
@@ -1318,7 +1318,7 @@ function oppCard(o){const f=fit(o);return `<article class="oc" data-open="${esc(
   <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px"><span class="muted">تناسب منظمات:</span>${sizePills(oppSizes(o))}</div>
   <div class="bar"><i style="width:${f}%;background:${fitC(f)}"></i></div></article>`}
 // ---------- discover with classification filters ----------
-let dSize='fit',dRoute='',dCat='',dScope='',dEg='';
+let dSize='all',dRoute='',dCat='',dScope='',dEg='';
 const filtOpp=o=>{const s=oppSizes(o);if(dSize==='fit'&&!s.includes(orgSize()))return false;if(['small','medium','large'].includes(dSize)&&!s.includes(dSize))return false;
   const r=oppRoute(o);if(dRoute&&!(r===dRoute||r==='both'))return false;if(dCat&&oppCat(o)!==dCat)return false;if(dScope&&oScope(o)!==dScope)return false;if(dEg&&oEg(o)!==dEg)return false;return true};
 R.discover=()=>{const list=OPPS.filter(filtOpp).map(o=>({o,f:fit(o)})).filter(x=>x.f>=minFit).sort((a,b)=>{const ca=oStatus(a.o)==='closed',cb=oStatus(b.o)==='closed';return ca!==cb?(ca?1:-1):b.f-a.f});
@@ -1343,7 +1343,7 @@ R.discover=()=>{const list=OPPS.filter(filtOpp).map(o=>({o,f:fit(o)})).filter(x=
   $('fEg').onclick=e=>{const b=e.target.closest('[data-v]');if(b){dEg=b.dataset.v;R.discover()}};
   $('fCat').onchange=e=>{dCat=e.target.value;R.discover()}};
 // ---------- funders directory ----------
-let fq='',fCat='',fRoute='',fSizeF='fit';
+let fq='',fCat='',fRoute='',fSizeF='all';
 const funderFit=f=>{let s=0;const os=orgSize();if((f.sizes||[]).includes(os))s+=50;const ov=(f.th||[]).filter(t=>P.themes.includes(t)).length;s+=Math.min(35,ov*12);
   if(f.govs==='all'||!f.govs||(f.govs||[]).some(g=>P.govs.includes(g)))s+=15;return Math.min(100,s)};
 R.funders=()=>{const os=orgSize();
