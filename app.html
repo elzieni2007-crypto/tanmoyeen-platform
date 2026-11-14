@@ -1646,8 +1646,11 @@ const oppSrcUrl=o=>isUrl(o.srcUrl)?o.srcUrl:isUrl(o.url)?o.url:'';
 const oppSite=o=>{if(isUrl(o.site))return o.site;const f=funderOf(o);return f&&isUrl(f.url)?f.url:''};
 const oppSrcName=o=>{const n=(o.srcName||'').trim();return n&&n!=='أُضيفت يدويًا'?n:(oppSrcUrl(o)?hostOf(oppSrcUrl(o)):'')};
 const srcOk=o=>!!(oppSrcName(o)&&oppSrcUrl(o)&&oppSite(o));
-const srcLinks=(o,cls='')=>{const su=oppSrcUrl(o),si=oppSite(o),sn=oppSrcName(o);
-  return `<div class="srcline ${cls}${srcOk(o)?'':' miss'}">${su?`<span>مصدر الإعلان: <a class="srcA" href="${esc(su)}" target="_blank" rel="noopener">${esc(sn||hostOf(su))} ↗</a></span>`:'<span>مصدر الإعلان: <b>غير مسجل</b></span>'}${si?`<span>الموقع الرسمي: <a class="srcA" href="${esc(si)}" target="_blank" rel="noopener">${esc(hostOf(si))} ↗</a></span>`:'<span>الموقع الرسمي: <b>غير مسجل</b></span>'}${srcOk(o)?'':'<span class="srcwarn">ناقصها مصدر. كمّلها من التفاصيل قبل ما تعتمد عليها</span>'}</div>`};
+const srcLinks=(o,cls='')=>{const u=isUrl(o.url)?o.url:'',su=oppSrcUrl(o),si=oppSite(o),sn=oppSrcName(o),gu=isUrl(o.guideUrl)?o.guideUrl:'';
+  // الأول صفحة الدعوة نفسها (o.url)، وبعدها الدليل، وبعدها المكان اللي اتنشرت فيه لو مختلف، وفي الآخر موقع الممول
+  const same=(a,b)=>!!a&&!!b&&a.replace(/\/+$/,'')===b.replace(/\/+$/,'');const A=(h,t)=>`<a class="srcA" href="${esc(h)}" target="_blank" rel="noopener">${esc(t)} ↗</a>`;
+  const call=u||su;
+  return `<div class="srcline ${cls}${srcOk(o)?'':' miss'}">${call?`<span><b>صفحة الدعوة والتقديم:</b> ${A(call,hostOf(call))}</span>`:'<span>صفحة الدعوة: <b>غير مسجلة</b></span>'}${gu&&!same(gu,call)?`<span>دليل الدعوة: ${A(gu,'افتح الدليل')}</span>`:''}${su&&!same(su,call)?`<span>نُشرت في: ${A(su,sn||hostOf(su))}</span>`:''}${si&&!same(si,call)?`<span>موقع الممول: ${A(si,hostOf(si))}</span>`:''}${srcOk(o)?'':'<span class="srcwarn">ناقصها مصدر. كمّلها من التفاصيل قبل ما تعتمد عليها</span>'}</div>`};
 // links inside a card open the site without opening the card
 document.addEventListener('click',e=>{if(e.target.closest('a.srcA'))e.stopPropagation()},true);
 const _ocSrc=oppCard;oppCard=function(o){const h=_ocSrc(o);const i=h.lastIndexOf('</article>');return i<0?h:h.slice(0,i)+srcLinks(o)+h.slice(i)};
