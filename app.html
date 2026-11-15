@@ -2462,9 +2462,18 @@ boot();
   document.head.appendChild(st)})();
 
 // شريط وضع الدعم الفني
+const FP_ASKEY='fpAsOrg_'+(new URLSearchParams(location.search).get('org')||'');
+FP.asOrg=()=>{if(!FP.support)return false;try{return sessionStorage.getItem(FP_ASKEY)==='1'}catch(e){return false}};
 FP.ready.then(()=>{if(!FP.support)return;const o=FP.org()||{};const bar=document.createElement('div');
   bar.style.cssText='position:sticky;top:0;z-index:9999;background:#7c3aed;color:#fff;font:700 13px Cairo,sans-serif;padding:8px 14px;text-align:center';
-  bar.textContent='🛠 وضع الدعم الفني: إنت شغال جوه حساب «'+(o.name||'')+'». أي تعديل هنا بيتحفظ عند الجمعية.';document.body.prepend(bar);
+  bar.textContent='🛠 وضع الدعم الفني: إنت شغال جوه حساب «'+(o.name||'')+'». أي تعديل هنا بيتحفظ عند الجمعية.';
+  // الحساب التجريبي: زرار يبدّل بين «وضع الأدمن» (كل حاجة مفتوحة) و«شوف كجمعية» (نفس الأقفال اللي الجمعية بتشوفها)
+  if(o.plan==='trial'){const as=FP.asOrg();
+    if(as){bar.style.background='#b45309';bar.textContent='👀 بتشوف الحساب كجمعية تجريبية: الأقفال شغالة زي ما الجمعية بتشوفها بالظبط. ';}
+    const t=document.createElement('button');t.type='button';t.textContent=as?'🛠 رجوع لوضع الأدمن (كل حاجة مفتوحة)':'👀 شوف كجمعية';
+    t.style.cssText='margin-inline-start:10px;background:#fff;color:#4c1d95;border:0;border-radius:999px;padding:3px 14px;font:inherit;font-weight:800;cursor:pointer';
+    t.onclick=()=>{try{if(as)sessionStorage.removeItem(FP_ASKEY);else sessionStorage.setItem(FP_ASKEY,'1')}catch(e){}location.reload()};bar.appendChild(t)}
+  document.body.prepend(bar);
   const a=document.querySelector('.fp-acct a');if(a){a.textContent='↩ رجوع للوحة الأدمن';a.href='https://elzieni2007-crypto.github.io/tanmoyeen-masr/'}});
 
 // ===== الحساب التجريبي =====
@@ -2480,7 +2489,7 @@ FP.ready.then(()=>{if(!FP.support)return;const o=FP.org()||{};const bar=document
   const LOCKED={aiWrite:'كتابة المقترح',aiWriteDonor:'كتابة المقترح على نموذج المانح',translateProposal:'الترجمة الإنجليزي',aiEmail:'إيميل التقديم',
     exportDocx:'تحميل Word',budgetXlsx:'تحميل الموازنة Excel',fillTemplate:'ملء نموذج الموازنة',budgetToProposal:'تحديث المقترح من الموازنة'};
   const SEL={'#aiBtn':'كتابة المقترح','#genBtn':'كتابة المقترح','#trBtn':'الترجمة الإنجليزي','#docxBtn':'تحميل Word','#bXlsx':'تحميل الموازنة Excel'};
-  const trial=()=>window.FP&&FP.plan&&FP.plan()==='trial'&&!FP.support;
+  const trial=()=>window.FP&&FP.plan&&FP.plan()==='trial'&&(!FP.support||(FP.asOrg&&FP.asOrg()));
   const esc=x=>String(x||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const oppTitle=()=>{try{const o=OBY(cur);return (o&&(o.title||o.t||o.name))||''}catch(e){return ''}};
   let WA='',UNTIL='';
@@ -2508,7 +2517,7 @@ FP.ready.then(()=>{if(!FP.support)return;const o=FP.org()||{};const bar=document
     setTimeout(()=>{const b=m.querySelector('.fpl-b');b&&b.focus()},50)}
   window.FP_LOCK=lock;
   // عرض السعر: بيفتح نفس صفحة العرض اللي الأدمن بيبعتها، والجمعية توافق منها. والطلب بيظهر للأدمن.
-  async function openQuote(btn,out){const w=window.open('about:blank','_blank');btn.disabled=true;const t=btn.textContent;btn.textContent='⏳ بنجهز العرض…';
+  async function openQuote(btn,out){if(FP.support){out.textContent='👀 في وضع «شوف كجمعية» الزرار ده مابيطلعش عرض حقيقي. عند الجمعية بيفتح صفحة عرض السعر في صفحة جديدة.';return}const w=window.open('about:blank','_blank');btn.disabled=true;const t=btn.textContent;btn.textContent='⏳ بنجهز العرض…';
     try{const r=await FP.quote();
       if(r.url){if(w&&!w.closed)w.location.href=r.url;out.innerHTML='✅ اتفتح عرض السعر'+(r.no?' رقم <span dir="ltr">'+esc(r.no)+'</span>':'')+' في صفحة جديدة. لو ماظهرش، <a href="'+esc(r.url)+'" target="_blank" rel="noopener">افتحه من هنا</a>. ومن نفس الصفحة تقدروا توافقوا أو تبعتوا استفسار.'}
       else{if(w)w.close();out.textContent='✅ وصلنا طلبك، وهنبعتلكم عرض السعر على الإيميل أو واتساب خلال يوم عمل'}}
