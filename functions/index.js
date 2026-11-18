@@ -246,6 +246,19 @@ const AR_DIG={'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧
 const enDig=x=>String(x||'').replace(/[٠-٩۰-۹]/g,c=>AR_DIG[c]);
 const normPhone=x=>{let d=enDig(x).replace(/\D/g,'');if(d.startsWith('0020'))d=d.slice(4);else if(d.startsWith('20')&&d.length>=12)d=d.slice(2);if(d.startsWith('0'))d=d.slice(1);return d.length>=9?d.slice(-10):''};
 const normReg=x=>{const d=enDig(x).replace(/\D/g,'').replace(/^0+/,'');return d||String(x||'').trim().toLowerCase().replace(/\s+/g,'')};
+// رقم الإشهار من غير السنة: الناس بتكتبه بأشكال كتير («1234 لسنة 2010»، «1234/2010»، «1234»، «12342010»)
+// فبنطلع منه الرقم الأساسي ونقارن على الأرقام دي، والموبايل لازم يطابق كمان.
+const isYear=g=>/^(19[5-9]\d|20[0-3]\d)$/.test(g);
+function regKeys(x){const t=enDig(x),K=new Set(),full=normReg(t);if(full)K.add(full);
+  const G=(t.match(/\d+/g)||[]).map(g=>g.replace(/^0+/,'')).filter(Boolean);
+  const main=G.filter(g=>!isYear(g));
+  if(main.length)K.add(main[0]);else if(G.length)K.add(G[0]);
+  // رقم وسنة لازقين في بعض من غير فاصل: 12342010 → 1234
+  if(G.length===1&&G[0].length>=6&&isYear(G[0].slice(-4)))K.add(G[0].slice(0,-4).replace(/^0+/,''));
+  // السنة الأول: 20101234 → 1234
+  if(G.length===1&&G[0].length>=6&&isYear(G[0].slice(0,4)))K.add(G[0].slice(4).replace(/^0+/,''));
+  K.delete('');return K}
+const regMatch=(a,b)=>{const A=regKeys(a),B=regKeys(b);for(const k of A)if(B.has(k))return true;return false};
 const maskMail=e=>{const [a,b]=String(e||'').split('@');if(!b)return '';return a.slice(0,Math.min(2,a.length))+'***@'+b};
 const okMail=e=>/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e);
 let _wl=null,_wlAt=0;
@@ -255,12 +268,12 @@ async function rateOk(req,max){const ip=String(req.get('x-forwarded-for')||req.i
   if(n>=max)return false;await ref.set({hr,n:n+1},{merge:false});return true}
 // الحجز اللي بيطابق الموبايل ورقم الإشهار (لو أكتر من حجز، الأولوية للي عليه حساب، وبعدين الأحدث)
 async function findBooking(phone,reg,force){const P=normPhone(phone),G=normReg(reg);if(!P||!G)return null;
-  const L=(await waitlist(force)).filter(w=>normPhone(w.phone)===P&&normReg(w.regNumber)===G);
+  const L=(await waitlist(force)).filter(w=>normPhone(w.phone)===P&&regMatch(w.regNumber,reg));
   if(!L.length)return null;L.sort((a,b)=>(b.orgId?1:0)-(a.orgId?1:0)||((b.timestamp&&b.timestamp.toMillis?b.timestamp.toMillis():0)-(a.timestamp&&a.timestamp.toMillis?a.timestamp.toMillis():0)));return L[0]}
 // لو الجمعية عندها حساب بالفعل (من الحجز ده أو من حجز تاني بنفس الموبايل أو رقم الإشهار)
 async function orgFor(w){if(w.orgId){const o=await db.doc('orgs/'+w.orgId).get();if(o.exists)return {id:o.id,...o.data()}}
   const P=normPhone(w.phone),G=normReg(w.regNumber);const q=await db.collection('orgs').get();
-  const m=q.docs.find(d=>{const x=d.data();return (P&&normPhone(x.phone)===P&&G&&normReg(x.regNumber)===G)});return m?{id:m.id,...m.data()}:null}
+  const m=q.docs.find(d=>{const x=d.data();return (P&&normPhone(x.phone)===P&&G&&regMatch(x.regNumber,w.regNumber))});return m?{id:m.id,...m.data()}:null}
 function stateOf(o,cfg){if(!o)return (cfg.open&&cfg.end>new Date())?'eligible':'closed';
   const ok=orgOk(o);if(isTrial(o))return ok?'trial':'ended';return ok?'subscribed':'expired'}
 const STATE_MSG={closed:'الفترة التجريبية خلصت. كلمنا على واتساب علشان تشترك',subscribed:'جمعيتكم مشتركة بالفعل. ادخلوا من صفحة الدخول بالإيميل وكلمة المرور',
