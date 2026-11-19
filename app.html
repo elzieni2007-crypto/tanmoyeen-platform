@@ -1062,7 +1062,7 @@ R.proposal=()=>{const o=OBY(cur)||OPPS[0];if(!o){$('proposal').innerHTML='<div c
     ${SAMPLE?`<button class="btn" id="aiBtn">${ic('spark')}${o.prop?(confirmRegen?'اضغط للتأكيد (ستُستبدل تعديلاتك)':'أعد الكتابة بالذكاء الاصطناعي'):'اكتب المقترح بالذكاء الاصطناعي'}</button><button class="btn line" id="aiStop" hidden>إيقاف</button>`:''}
     <button class="btn ${SAMPLE?'soft':''}" id="genBtn">${SAMPLE?'مسودة سريعة من القوالب':(o.prop?'أعد كتابة المقترح':'اكتب المقترح الكامل')}</button>
     ${o.prop?`<button class="btn soft" id="docxBtn">${ic('doc')}حمّل Word</button><button class="btn soft" id="copyBtn">${ic('copy')}انسخ</button>`:''}</div>
-   <div class="muted" id="aiSt" style="margin-top:8px">${SAMPLE?'الكتابة بالذكاء الاصطناعي تستغرق دقيقة أو اثنتين وتظهر أمامك قسمًا قسمًا. أول مرة سيُطلب منك السماح.':'الكتابة بالذكاء الاصطناعي متاحة عند فتح الصفحة داخل Claude.'}</div></div>
+   <div class="muted" id="aiSt" style="margin-top:8px">${SAMPLE?'الكتابة بالذكاء الاصطناعي تستغرق دقيقة أو اثنتين وتظهر أمامك قسمًا قسمًا. أول مرة سيُطلب منك السماح.':'الكتابة بالذكاء الاصطناعي مش متاحة دلوقتي. جرّب تاني بعد شوية.'}</div></div>
    <div class="card"><h3>مصادر المحتوى من البروفايل</h3><div class="srclist">${src.used.map(([a,b])=>`<div><i style="background:var(--ok)"></i><span><b>${a}:</b> ${esc(b)}</span></div>`).join('')}${src.gaps.map(g=>`<div><i style="background:var(--warn)"></i><span>${esc(g)}</span></div>`).join('')}</div><button class="btn line block" data-go="profile" style="margin-top:12px">حدّث البروفايل</button></div></div>
   ${o.prop?`<div class="note">المقترح قابل للتعديل مباشرة وتعديلاتك تُحفظ تلقائيًا${MODE==='db'?' ويراها فريقك':''}. الأجزاء المظللة بالأصفر تحتاج بيانات منك. ${o.prop.mode==='ai'?'مكتوب بالذكاء الاصطناعي':'مسودة قوالب'} · ${new Date(o.prop.at).toLocaleString('ar-EG-u-nu-latn')}</div><article class="paper" id="paper">${o.prop.html}</article>`:`<div class="card empty">اضبط الإعدادات ثم اختر طريقة الكتابة. المقترح من 15 قسمًا، من الملخص التنفيذي إلى الملاحق، ومعه الإطار المنطقي والخطة الزمنية والميزانية.</div>`}`;
   bindSel('proposal');$('proposal').querySelector('[data-go]').onclick=()=>go('profile');
@@ -1151,7 +1151,7 @@ async function translateProposal(o){const status=t=>{const s=$('trSt');if(s)s.te
   const tb=$('trBtn');if(tb)tb.disabled=true;const ts=$('trStop');if(ts)ts.hidden=false;
   const pe0=$('paperEn');if(pe0&&!pe0.innerHTML.trim())pe0.innerHTML=o.prop.html;
   let lastErr=null;
-  try{for(let k=0;k<chunks.length;k++){const idx=chunks[k];status(`يترجم الجزء ${k+1} من ${chunks.length}… (أول مرة سيُطلب منك السماح باستخدام Claude)`);
+  try{for(let k=0;k<chunks.length;k++){const idx=chunks[k];status(`يترجم الجزء ${k+1} من ${chunks.length}…`);
       let t=0;const live=p=>{apply(p,idx);if(Date.now()-t>700){t=Date.now();render()}};
       try{apply(await translateChunk(strs,idx,trCtl.signal,live),idx)}
       catch(e){if(e&&['cancelled','not_granted','sampling_disabled','rate_limited','session_expired','not_declared','capability_disabled','capability_removed'].includes(e.code))throw e;lastErr=e;if(e&&e.text)apply(parseSeg(e.text),idx)}
@@ -1163,7 +1163,7 @@ async function translateProposal(o){const status=t=>{const s=$('trSt');if(s)s.te
     o.propEn={html:render(),at:Date.now(),from};saveEn(o);toast('النسخة الإنجليزية جاهزة');trCtl=null;R.proposal();
     status(left?`اكتملت الترجمة، وبقيت ${left} فقرة بالعربية${lastErr?` (${lastErr.code||'خطأ'})`:''}. اضغط «أعد الترجمة» أو عدّلها يدويًا.`:'اكتملت الترجمة. راجع المصطلحات والأجزاء المظللة بالأصفر.')}
   catch(e){const html=render();if(strs.some((s,i)=>out[i]!==s)){o.propEn={html,at:Date.now(),from};saveEn(o)}
-    status(e.code==='cancelled'?'أوقفت الترجمة. ما تُرجم محفوظ.':['not_granted','sampling_disabled','not_declared'].includes(e.code)?'لم يُسمح للصفحة باستخدام Claude. اسمح بها من قائمة الأذونات في أعلى الصفحة ثم أعد المحاولة.':e.code==='rate_limited'?'وصلت لحد الاستخدام مؤقتًا. حاول بعد قليل، وما تُرجم محفوظ.':`تعذرت الترجمة الآن (${e.code||'خطأ غير معروف'}). حاول مرة أخرى.`)}
+    status(e.code==='cancelled'?'أوقفت الترجمة. ما تُرجم محفوظ.':['not_granted','sampling_disabled','not_declared'].includes(e.code)?'لم يُسمح للصفحة باستخدام الذكاء الاصطناعي. اسمح بها من قائمة الأذونات في أعلى الصفحة ثم أعد المحاولة.':e.code==='rate_limited'?'وصلت لحد الاستخدام مؤقتًا. حاول بعد قليل، وما تُرجم محفوظ.':`تعذرت الترجمة الآن (${e.code||'خطأ غير معروف'}). حاول مرة أخرى.`)}
   finally{trCtl=null;const b=$('trBtn');if(b)b.disabled=false;const s=$('trStop');if(s)s.hidden=true}}
 // ---------- submission email ----------
 const refCode=o=>{const m=`${o.notes||''} ${o.sum||''} ${o.t||''}`.match(/(EuropeAid\/[A-Z0-9\/]+|[A-Z]{2,}[A-Z0-9\-\/]*\d[A-Z0-9\-\/]*)/);return m?m[1]:''};
@@ -1220,7 +1220,7 @@ Facts: ${JSON.stringify({donor:o.d,call:o.t,reference:refCode(o),organization:la
 Proposal executive summary:
 ${summary}`,{signal:mailCtl.signal,cache:false});
     if(r&&r.subject&&r.body){m.subject=String(r.subject);m.body=String(r.body).replace(/\\n/g,'\n');saveO();R.proposal();toast('كُتب الإيميل')}else throw{code:'invalid_json'}}
-  catch(e){const s=$('mailSt');if(s)s.textContent=e.code==='cancelled'?'أُوقفت الكتابة.':['not_granted','sampling_disabled','not_declared'].includes(e.code)?'لم يُسمح للصفحة باستخدام Claude. اسمح بها من قائمة الأذونات ثم أعد المحاولة. القالب الجاهز متاح.':e.code==='rate_limited'?'وصلت لحد الاستخدام مؤقتًا. القالب الجاهز متاح.':`تعذرت الكتابة الآن (${e.code||'خطأ'}). القالب الجاهز متاح ويمكنك المحاولة مرة أخرى.`}
+  catch(e){const s=$('mailSt');if(s)s.textContent=e.code==='cancelled'?'أُوقفت الكتابة.':['not_granted','sampling_disabled','not_declared'].includes(e.code)?'لم يُسمح للصفحة باستخدام الذكاء الاصطناعي. اسمح بها من قائمة الأذونات ثم أعد المحاولة. القالب الجاهز متاح.':e.code==='rate_limited'?'وصلت لحد الاستخدام مؤقتًا. القالب الجاهز متاح.':`تعذرت الكتابة الآن (${e.code||'خطأ'}). القالب الجاهز متاح ويمكنك المحاولة مرة أخرى.`}
   finally{mailCtl=null;const bb=$('mailAi');if(bb)bb.disabled=false}}
 function copyText(t,okMsg,el){const fb=()=>{try{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');ta.remove();if(ok){toast(okMsg);return}}catch(e){}if(el){el.focus();el.select&&el.select()}toast('حدّد النص وانسخه يدويًا (Ctrl+C)')};
   try{navigator.clipboard.writeText(t).then(()=>toast(okMsg)).catch(fb)}catch(e){fb()}}
@@ -1260,7 +1260,7 @@ R.proposal=()=>{const o=OBY(cur)||OPPS[0];if(!o){$('proposal').innerHTML='<div c
   if(propTab==='ar')body=o.prop?`<div class="docbar"><div class="note" style="flex:1;min-width:240px">قابل للتعديل مباشرة وتعديلاتك تُحفظ تلقائيًا${MODE==='db'?' ويراها فريقك':''}. الأجزاء المظللة بالأصفر تحتاج بيانات منك. ${o.prop.mode==='ai'?'مكتوب بالذكاء الاصطناعي':'مسودة قوالب'} · ${new Date(o.prop.at).toLocaleString('ar-EG-u-nu-latn')}</div><div class="toolbar"><button class="btn soft" data-dx="ar">${ic('doc')}حمّل Word</button><button class="btn soft" id="copyAr">${ic('copy')}انسخ</button></div></div><article class="paper" id="paper">${o.prop.html}</article>`
     :`<div class="card empty">اضبط الإعدادات ثم اختر طريقة الكتابة. المقترح من 15 قسمًا، من الملخص التنفيذي إلى الملاحق، ومعه الإطار المنطقي والخطة الزمنية والميزانية. بعدها تقدر تطلع منه نسخة إنجليزية وإيميل التقديم.</div>`;
   if(propTab==='en'){if(!o.prop)body=`<div class="card empty">اكتب المقترح العربي أولًا، وبعدها ترجمه للإنجليزية بضغطة واحدة.</div>`;
-    else if(!SAMPLE&&!o.propEn)body=`<div class="card empty">الترجمة بالذكاء الاصطناعي متاحة عند فتح الصفحة داخل Claude.</div>`;
+    else if(!SAMPLE&&!o.propEn)body=`<div class="card empty">الترجمة بالذكاء الاصطناعي مش متاحة دلوقتي. جرّب تاني بعد شوية.</div>`;
     else body=`<div class="docbar"><div class="note" style="flex:1;min-width:240px">${o.propEn?`ترجمة احترافية للنسخة العربية، بنفس الأقسام والجداول، وقابلة للتعديل مباشرة.${propChanged(o)?' <b>النسخة العربية اتعدلت بعد آخر ترجمة.</b>':''}`:'تُترجم النسخة العربية الحالية بنفس الأقسام والجداول والأرقام. تستغرق الترجمة دقيقة أو اثنتين.'}</div>
       <div class="toolbar">${SAMPLE?`<button class="btn ${o.propEn&&!propChanged(o)?'soft':''}" id="trBtn">${ic('spark')}${o.propEn?'أعد الترجمة':'ترجم المقترح للإنجليزية'}</button><button class="btn line" id="trStop" hidden>إيقاف</button>`:''}${o.propEn?`<button class="btn soft" data-dx="en">${ic('doc')}Word English</button><button class="btn soft" id="copyEn">${ic('copy')}Copy</button>`:''}</div></div>
       <div class="muted" id="trSt"></div><article class="paper en" id="paperEn" dir="ltr" lang="en">${o.propEn?o.propEn.html:''}</article>`}
@@ -1274,7 +1274,7 @@ R.proposal=()=>{const o=OBY(cur)||OPPS[0];if(!o){$('proposal').innerHTML='<div c
    <div class="field"><label for="ppG">المحافظات المستهدفة</label><input id="ppG" value="${esc(pr.govs.join('، '))}"></div></div>
    <div class="toolbar" style="margin-top:14px">${SAMPLE?`<button class="btn" id="aiBtn">${ic('spark')}${o.prop?(confirmRegen?'اضغط للتأكيد (ستُستبدل تعديلاتك)':'أعد الكتابة بالذكاء الاصطناعي'):'اكتب المقترح بالذكاء الاصطناعي'}</button><button class="btn line" id="aiStop" hidden>إيقاف</button>`:''}
     <button class="btn ${SAMPLE?'soft':''}" id="genBtn">${SAMPLE?'مسودة سريعة من القوالب':(o.prop?'أعد كتابة المقترح':'اكتب المقترح الكامل')}</button></div>
-   <div class="muted" id="aiSt" style="margin-top:8px">${SAMPLE?'الكتابة بالذكاء الاصطناعي تستغرق دقيقة أو اثنتين وتظهر أمامك قسمًا قسمًا. أول مرة سيُطلب منك السماح.':'الكتابة بالذكاء الاصطناعي متاحة عند فتح الصفحة داخل Claude.'}</div></div>
+   <div class="muted" id="aiSt" style="margin-top:8px">${SAMPLE?'الكتابة بالذكاء الاصطناعي تستغرق دقيقة أو اثنتين وتظهر أمامك قسمًا قسمًا. أول مرة سيُطلب منك السماح.':'الكتابة بالذكاء الاصطناعي مش متاحة دلوقتي. جرّب تاني بعد شوية.'}</div></div>
    <div class="card"><h3>حالة الملف</h3><div class="srclist">
     <div><i style="background:${o.prop?'var(--ok)':'var(--line)'}"></i><span>المقترح العربي: ${o.prop?'جاهز':'لم يُكتب بعد'}</span></div>
     <div><i style="background:${o.propEn?(propChanged(o)?'var(--warn)':'var(--ok)'):'var(--line)'}"></i><span>النسخة الإنجليزية: ${o.propEn?(propChanged(o)?'تحتاج تحديث':'جاهزة'):'لم تُترجم بعد'}</span></div>
@@ -1395,7 +1395,7 @@ function scanBox(){const r=SCANREQ||{};const busy=r.status==='pending'||r.status
   else if(r.status==='failed')st=`<div class="scan-st bad"><span class="dot"></span><div><b>البحث اليدوي الأخير ماكملش</b><small>${esc(r.note||'جرّب تطلبه تاني.')}</small></div></div>`;
   return `<div class="card scanbox"><div class="scan-row"><div style="flex:1;min-width:220px"><h3 style="margin:0 0 4px">${ic('search')}ابحث الآن</h3><p class="muted" style="margin:0">مش لازم تستنى البحث اليومي. اطلب بحث جديد في أي وقت، ولو عايز ركّز على مجال أو ممول معين.</p></div>
     <div class="scan-ctl"><input id="scanFocus" class="inp" placeholder="تركيز اختياري: مثلًا منح للمرأة في الصعيد" maxlength="120" ${busy||out?'disabled':''}><button class="btn" id="scanBtn" ${busy||out||MODE!=='db'?'disabled':''}>${ic('search')}${busy?'البحث مطلوب':out?'خلصت طلبات النهاردة':'ابحث الآن'}</button></div></div>
-    ${st}<div class="muted" style="font-size:12.5px;margin-top:8px">${MODE==='db'?(out?`اتعمل ${SCAN_DAY_LIMIT===2?"بحثين يدويين":SCAN_DAY_LIMIT+" بحث يدوي"} النهاردة، وده الحد اليومي للمنصة. البحث التلقائي هيشتغل بكرة 6:45 صباحًا ويجيب الجديد.`:`متاح ${left===1?'طلب واحد':`${left} طلبات`} النهاردة للمنصة كلها. الطلبات بتتنفذ ${SCAN_WINDOW}، والبحث اليومي التلقائي شغال كالعادة 6:45 صباحًا.`):'البحث عند الطلب بيشتغل لما المنصة تكون مفتوحة جوه Claude.'}</div></div>`}
+    ${st}<div class="muted" style="font-size:12.5px;margin-top:8px">${MODE==='db'?(out?`اتعمل ${SCAN_DAY_LIMIT===2?"بحثين يدويين":SCAN_DAY_LIMIT+" بحث يدوي"} النهاردة، وده الحد اليومي للمنصة. البحث التلقائي هيشتغل بكرة 6:45 صباحًا ويجيب الجديد.`:`متاح ${left===1?'طلب واحد':`${left} طلبات`} النهاردة للمنصة كلها. الطلبات بتتنفذ ${SCAN_WINDOW}، والبحث اليومي التلقائي شغال كالعادة 6:45 صباحًا.`):'البحث عند الطلب مش متاح دلوقتي.'}</div></div>`}
 async function requestScan(){if(MODE!=='db'||!DB)return;const b=$('scanBtn');if(b){b.disabled=true;b.innerHTML=ic('search')+'جاري الطلب…'}
   const focus=($('scanFocus')?.value||'').trim().slice(0,120);
   try{const ref=DB.doc('meta/scanReq');const s=await ref.get();const cur=s.exists?s.data():null;
@@ -1563,7 +1563,7 @@ function guideCard(o){const g=guideOf(o),spec=specOf(o),busy=guideBusy===o.id;
   else if(busy)body=`<div class="scan-st"><span class="dot pulse"></span><div><b>بيقرا الدليل دلوقتي</b><small>بيطلّع الأقسام المطلوبة ومعايير التقييم وحدود الطول. بياخد دقيقة تقريبًا.</small></div></div>`;
   else if(!g)body=`<p class="muted" style="margin:0 0 12px">ارفع دليل الدعوة أو نموذج التقديم، والمقترح هيتكتب بنفس أقسام المانح وترتيبه ومعايير تقييمه وحدود الطول. من غير دليل، بيتكتب على النموذج العام (15 قسم).</p><div class="toolbar">${upl}${link}</div>${paste}`;
   else{const meta=`<div class="muted" style="font-size:12.5px">${esc(g.fileName||'نص ملصوق')} · ${num(g.chars||g.text.length)} حرف${g.cut||g.specPartial?' · اتقرا أول جزء بس لأن الدليل طويل':''}${g.by?' · رفعه '+esc(g.by):''}</div>`;
-    if(!g.spec)body=`${meta}<p style="margin:10px 0">الدليل محفوظ ولسه ما اتقراش.</p><div class="toolbar">${SAMPLE?`<button class="btn" id="gRun">${ic('spark')}اقرا الدليل</button>`:'<span class="muted">قراءة الدليل بالذكاء الاصطناعي متاحة جوه Claude.</span>'}${upl}<button class="btn line" id="gDel">احذف</button></div>${paste}`;
+    if(!g.spec)body=`${meta}<p style="margin:10px 0">الدليل محفوظ ولسه ما اتقراش.</p><div class="toolbar">${SAMPLE?`<button class="btn" id="gRun">${ic('spark')}اقرا الدليل</button>`:'<span class="muted">قراءة الدليل بالذكاء الاصطناعي مش متاحة دلوقتي.</span>'}${upl}<button class="btn line" id="gDel">احذف</button></div>${paste}`;
     else if(!spec)body=`${meta}<div class="note" style="margin:10px 0">النص ده مش باين إنه دليل دعوة أو نموذج تقديم، فالمقترح هيتكتب على النموذج العام.</div><div class="toolbar">${upl}<button class="btn line" id="gDel">احذف</button></div>${paste}`;
     else{const ready=donorReady(o),dn=useDonor(o),L=spec.limits;
       const lang={ar:'العربية',en:'الإنجليزية',fr:'الفرنسية'}[spec.lang];
@@ -1741,7 +1741,7 @@ const cleanIdea=x=>{const S=v=>typeof v==='string'?v.trim():'';const A=v=>Array.
     approach:S(x.approach).slice(0,1200),why:S(x.why).slice(0,800),own:S(x.own).slice(0,1500)}};
 const OWN_MIN=60;
 const blankIdea=o=>{const pr=propParams(o);return {title:pr.title,problem:'',goal:'',groups:pr.groups.slice(),govs:pr.govs.slice(),outcomes:[{o:'',acts:['']}],approach:'',why:'',own:''}};
-async function suggestIdeas(o){if(!SAMPLE){toast('اقتراح الأفكار بالذكاء الاصطناعي متاح جوه Claude');return}
+async function suggestIdeas(o){if(!SAMPLE){toast('اقتراح الأفكار بالذكاء الاصطناعي مش متاح دلوقتي');return}
   const id=ideaOf(o),hint=($('ideaHint')?.value||'').trim().slice(0,300);ideaBusy=o.id;R.proposal();
   const pr=propParams(o),spec=typeof specOf==='function'?specOf(o):null;const prevT=(id.options||[]).map(x=>x.title).filter(Boolean);
   try{const r=await SAMPLE.json(`أنت خبير تصميم مشروعات تنموية للجمعيات الأهلية المصرية. اقترح 3 أفكار مشروعات مختلفة عن بعض تقدر الجمعية تتقدم بيها للدعوة دي، كل فكرة مبنية على خبرات الجمعية الحقيقية ومشروعاتها السابقة وفريقها، ومناسبة لأولويات المانح.
@@ -1952,7 +1952,7 @@ function pfClean(r){const S=v=>typeof v==='string'?v.trim().slice(0,1500):'',N=v
   const tm=A(r.team).map(p=>({name:S(p&&p.name),role:S(p&&p.role),years:N(p&&p.years),expertise:S(p&&p.expertise)})).filter(p=>p.name||p.role).slice(0,15);if(tm.length)o.team=tm;
   const pr=A(r.partners).map(p=>({name:S(p&&p.name),type:S(p&&p.type)||'شريك'})).filter(p=>p.name).slice(0,20);if(pr.length)o.partners=pr;
   return o}
-async function pfExtract(){if(!SAMPLE){toast('القراءة بالذكاء الاصطناعي متاحة جوه Claude');return}
+async function pfExtract(){if(!SAMPLE){toast('القراءة بالذكاء الاصطناعي مش متاحة دلوقتي');return}
   const parts=pfFiles.map(f=>`=== ملف: ${f.name} ===\n${f.text}`);let all=parts.join('\n\n');all=capBytes(all,150000);
   pfBusy=true;R.profile();
   try{const r=await SAMPLE.json(`اقرأ مستندات الجمعية التالية (بروفايل، تقرير سنوي، نظام أساسي، سيرة مؤسسية، قوائم...) واستخرج بيانات بروفايل الجمعية. أعد كائن JSON واحد فقط، واترك أي حقل مش موجود في النص فارغ أو احذفه. لا تخترع أي معلومة أو رقم.
@@ -2166,7 +2166,7 @@ function gridOf(ws,maxR=70,maxC=26){const ref=ws['!ref'];if(!ref)return [];const
   for(let r=rg.s.r;r<=Math.min(rg.e.r,rg.s.r+maxR-1);r++){const cells=[];for(let c=rg.s.c;c<=Math.min(rg.e.c,rg.s.c+maxC-1);c++){const a=XLSX.utils.encode_cell({r,c});const x=ws[a];if(!x)continue;const v=x.f?`=${x.f}`:String(x.w??x.v??'').replace(/\s+/g,' ').slice(0,60);if(v)cells.push(`${a}: ${v}`)}if(cells.length)out.push(cells.join(' | '))}return out}
 async function fillTemplate(o,f){const st=t=>{const e=$('tplSt');if(e)e.textContent=t};const nm=$('tplName');if(nm)nm.textContent=f.name;
   if(!/\.xlsx$/i.test(f.name)){st('الملف لازم يكون Excel بصيغة ‎.xlsx. لو النموذج Word انسخ الجداول من ملف الإكسيل اللي المنصة بتطلعه');return}
-  if(!SAMPLE){st('قراءة النموذج محتاجة الذكاء الاصطناعي، ومتاحة لما المنصة تتفتح جوه Claude');return}
+  if(!SAMPLE){st('قراءة النموذج بالذكاء الاصطناعي مش متاحة دلوقتي');return}
   try{await Promise.all([loadXLSX(),loadZip()])}catch(e){st('تعذر تحميل أدوات القراءة. حاول تاني');return}
   if(!o.bud){o.bud=draftBudget(o);saveO()}const b=o.bud,Q=Q_OF(o),dur=propParams(o).dur;
   st('بقرا النموذج…');const buf=await f.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellFormula:true});
