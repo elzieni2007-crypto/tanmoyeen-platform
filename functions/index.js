@@ -16,8 +16,8 @@ const MODELS={full:process.env.FP_MODEL_FULL||'claude-opus-5-5',std:process.env.
 const MAXTOK={full:16000,std:8000,quick:4000};
 const MAX_PROMPT=400000;
 const BASE=process.env.ANTHROPIC_BASE_URL||'https://api.anthropic.com';
-const JSON_SYS='You are a careful assistant for Egyptian NGOs. Reply with exactly one valid JSON value and nothing else: no markdown fences, no commentary. Never invent facts, numbers or requirements that are not in the input.';
-const TEXT_SYS='You are a careful proposal-writing assistant for Egyptian NGOs. Follow the user instructions exactly. Never invent facts, figures, partners or results that are not in the input; where data is missing, leave the placeholder the instructions ask for.';
+const JSON_SYS='You are a careful assistant for Egyptian NGOs. Reply with exactly one valid JSON value and nothing else: no markdown fences, no commentary. Never invent facts, numbers or requirements that are not in the input. Never mention Claude, Anthropic, AI or a model in any value.';
+const TEXT_SYS='You are a careful proposal-writing assistant for Egyptian NGOs. Follow the user instructions exactly. Never invent facts, figures, partners or results that are not in the input; where data is missing, leave the placeholder the instructions ask for. Output only the requested document text: never mention Claude, Anthropic, AI, a model or yourself, and add no notes about the translation or the writing process.';
 
 const bad=(res,code,error)=>{if(!res.headersSent)res.status(code).json({error})};
 
